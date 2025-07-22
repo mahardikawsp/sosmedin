@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profiles
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash    String?
+  username       String   @unique
+  displayName    String?
+  bio            String?  @db.Text
+  profileImageUrl String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // OAuth related fields
+  accounts       Account[]
+
+  // Relations
+  posts          Post[]    // User's posts
+  likes          Like[]    // Posts liked by user
+  followedBy     Follow[]  @relation("Follower")
+  following      Follow[]  @relation("Following")
+  notifications  Notification[] // Notifications received by user
+}
+
+// Account model for OAuth providers
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// Post model for user content
+model Post {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  isEdited  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  
+  // Self-relation for threaded replies
+  parent    Post?    @relation("Replies", fields: [parentId], references: [id], onDelete: SetNull)
+  parentId  String?
+  replies   Post[]   @relation("Replies")
+  
+  // Other relations
+  likes     Like[]
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+// Like model for post interactions
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+
+  // Ensure a user can only like a post once
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+// Follow model for user relationships
+model Follow {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Relations
+  follower    User   @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId  String
+  following   User   @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId String
+
+  // Ensure a user can only follow another user once
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// Notification model for user alerts
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // like, follow, reply, etc.
+  referenceId String?  // ID of the related entity (post, user, etc.)
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  @@index([userId])
+  @@index([type])
+}
