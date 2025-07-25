@@ -21,7 +21,16 @@ export async function POST(
         // Check if post exists
         const post = await prisma.post.findUnique({
             where: { id: postId },
-            select: { id: true },
+            select: {
+                id: true,
+                userId: true,
+                user: {
+                    select: {
+                        username: true,
+                        displayName: true,
+                    }
+                }
+            },
         });
 
         if (!post) {
@@ -55,6 +64,17 @@ export async function POST(
                 postId: postId,
             },
         });
+
+        // Create notification for the post author (if not liking own post)
+        if (post.userId !== currentUserId) {
+            await prisma.notification.create({
+                data: {
+                    userId: post.userId,
+                    type: 'like',
+                    referenceId: postId,
+                },
+            });
+        }
 
         return NextResponse.json({ message: 'Post liked successfully' });
     } catch (error) {

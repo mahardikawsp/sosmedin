@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import PostEditForm from './PostEditForm';
+import LikeButton from '@/components/interactions/LikeButton';
 
 interface PostCardProps {
     post: {
@@ -46,35 +47,19 @@ export default function PostCard({
     const { data: session } = useSession();
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [isLiking, setIsLiking] = useState(false);
     const [localPost, setLocalPost] = useState(post);
 
     const isOwner = session?.user?.id === post.user.id;
 
-    const handleLike = async () => {
-        if (!session || isLiking) return;
-
-        setIsLiking(true);
-        try {
-            const response = await fetch(`/api/posts/${post.id}/like`, {
-                method: localPost.isLiked ? 'DELETE' : 'POST',
-            });
-
-            if (response.ok) {
-                setLocalPost(prev => ({
-                    ...prev,
-                    isLiked: !prev.isLiked,
-                    _count: {
-                        ...prev._count,
-                        likes: prev.isLiked ? prev._count.likes - 1 : prev._count.likes + 1,
-                    },
-                }));
-            }
-        } catch (error) {
-            console.error('Error toggling like:', error);
-        } finally {
-            setIsLiking(false);
-        }
+    const handleLikeChange = (liked: boolean, newCount: number) => {
+        setLocalPost(prev => ({
+            ...prev,
+            isLiked: liked,
+            _count: {
+                ...prev._count,
+                likes: newCount,
+            },
+        }));
     };
 
     const handleDelete = async () => {
@@ -195,17 +180,12 @@ export default function PostCard({
                     {/* Actions */}
                     <div className="flex items-center gap-6 mt-3 text-gray-500 dark:text-gray-400">
                         {/* Like button */}
-                        <button
-                            onClick={handleLike}
-                            disabled={!session || isLiking}
-                            className={`flex items-center gap-1 text-sm hover:text-red-500 transition-colors ${localPost.isLiked ? 'text-red-500' : ''
-                                } ${!session ? 'cursor-not-allowed opacity-50' : ''}`}
-                        >
-                            <svg className="w-4 h-4" fill={localPost.isLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                            <span>{localPost._count.likes}</span>
-                        </button>
+                        <LikeButton
+                            postId={localPost.id}
+                            initialLiked={localPost.isLiked || false}
+                            initialCount={localPost._count.likes}
+                            onLikeChange={handleLikeChange}
+                        />
 
                         {/* Reply button */}
                         {showReplies && (

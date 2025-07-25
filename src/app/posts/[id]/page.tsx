@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { PostCard, PostForm } from '@/components/posts';
+import { PostCard } from '@/components/posts';
+import ThreadedReplies from '@/components/conversations/ThreadedReplies';
 import Link from 'next/link';
 
 export default function PostDetailPage() {
@@ -38,39 +39,8 @@ export default function PostDetailPage() {
         }
     }, [postId]);
 
-    const handleReplyCreated = (newReply: any) => {
-        setPost((prev: any) => ({
-            ...prev,
-            replies: [newReply, ...(prev.replies || [])],
-            _count: {
-                ...prev._count,
-                replies: prev._count.replies + 1,
-            },
-        }));
-    };
-
     const handlePostUpdated = (updatedPost: any) => {
         setPost(updatedPost);
-    };
-
-    const handleReplyUpdated = (updatedReply: any) => {
-        setPost((prev: any) => ({
-            ...prev,
-            replies: prev.replies.map((reply: any) =>
-                reply.id === updatedReply.id ? updatedReply : reply
-            ),
-        }));
-    };
-
-    const handleReplyDeleted = (replyId: string) => {
-        setPost((prev: any) => ({
-            ...prev,
-            replies: prev.replies.filter((reply: any) => reply.id !== replyId),
-            _count: {
-                ...prev._count,
-                replies: prev._count.replies - 1,
-            },
-        }));
     };
 
     if (loading) {
@@ -124,40 +94,20 @@ export default function PostDetailPage() {
                 />
             </div>
 
-            {/* Reply form */}
-            <div className="mb-6">
-                <h2 className="text-lg font-semibold mb-4">Reply to this post</h2>
-                <PostForm
-                    parentId={post.id}
-                    placeholder="Write your reply..."
-                    buttonText="Reply"
-                    onPostCreated={handleReplyCreated}
-                />
-            </div>
-
-            {/* Replies */}
+            {/* Threaded Replies */}
             <div>
                 <h2 className="text-lg font-semibold mb-4">
                     Replies ({post._count.replies})
                 </h2>
 
-                {post.replies && post.replies.length > 0 ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
-                        {post.replies.map((reply: any) => (
-                            <PostCard
-                                key={reply.id}
-                                post={reply}
-                                onPostUpdated={handleReplyUpdated}
-                                onPostDeleted={handleReplyDeleted}
-                                showReplies={false}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                        No replies yet. Be the first to reply!
-                    </div>
-                )}
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <ThreadedReplies
+                        postId={post.id}
+                        initialReplies={post.replies || []}
+                        maxDepth={3}
+                        showReplyForm={true}
+                    />
+                </div>
             </div>
         </div>
     );

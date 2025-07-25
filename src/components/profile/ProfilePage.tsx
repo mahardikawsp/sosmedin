@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useSession } from '@/hooks/use-session';
 import ProfileImageUpload from './ProfileImageUpload';
 import UserPosts from './UserPosts';
+import FollowButton from '@/components/interactions/FollowButton';
 
 interface ProfilePageProps {
     username: string;
@@ -32,7 +33,6 @@ export default function ProfilePage({ username }: ProfilePageProps) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [followLoading, setFollowLoading] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -60,34 +60,15 @@ export default function ProfilePage({ username }: ProfilePageProps) {
         fetchProfile();
     }, [username]);
 
-    const handleFollow = async () => {
-        if (!isAuthenticated || !profile) return;
-
-        try {
-            setFollowLoading(true);
-            const method = profile.isFollowing ? 'DELETE' : 'POST';
-            const response = await fetch(`/api/users/${username}/follow`, {
-                method,
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update follow status');
-            }
-
-            const data = await response.json();
-            setProfile(prev => prev ? {
-                ...prev,
-                isFollowing: data.isFollowing,
-                _count: {
-                    ...prev._count,
-                    followedBy: prev._count.followedBy + (data.isFollowing ? 1 : -1),
-                },
-            } : null);
-        } catch (err) {
-            console.error('Error updating follow status:', err);
-        } finally {
-            setFollowLoading(false);
-        }
+    const handleFollowChange = (following: boolean) => {
+        setProfile(prev => prev ? {
+            ...prev,
+            isFollowing: following,
+            _count: {
+                ...prev._count,
+                followedBy: prev._count.followedBy + (following ? 1 : -1),
+            },
+        } : null);
     };
 
     const handleProfileUpdate = (updatedProfile: UserProfile) => {
@@ -184,18 +165,13 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                             >
                                 {isEditing ? 'Cancel' : 'Edit Profile'}
                             </button>
-                        ) : isAuthenticated ? (
-                            <button
-                                onClick={handleFollow}
-                                disabled={followLoading}
-                                className={`px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${profile.isFollowing
-                                        ? 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                                    } ${followLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                {followLoading ? 'Loading...' : profile.isFollowing ? 'Unfollow' : 'Follow'}
-                            </button>
-                        ) : null}
+                        ) : (
+                            <FollowButton
+                                username={username}
+                                initialFollowing={profile.isFollowing || false}
+                                onFollowChange={handleFollowChange}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -344,8 +320,8 @@ function ProfileEditForm({ profile, onUpdate, onCancel }: ProfileEditFormProps) 
                     type="submit"
                     disabled={loading}
                     className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${loading
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                         }`}
                 >
                     {loading ? 'Saving...' : 'Save Changes'}
