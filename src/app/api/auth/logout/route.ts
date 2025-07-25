@@ -1,24 +1,23 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
     try {
-        // Get the cookie store
-        const cookieStore = cookies();
+        // Get the current session
+        const session = await getServerSession(authOptions);
 
-        // Delete the auth token cookie
-        cookieStore.delete('auth_token');
+        if (!session) {
+            return NextResponse.json({ message: 'No active session' }, { status: 200 });
+        }
 
         // Return success response
-        return NextResponse.json(
-            { message: 'Logout successful' },
-            { status: 200 }
-        );
+        // Note: The actual session destruction happens in the client using signOut()
+        return NextResponse.json({ message: 'Logged out successfully' }, { status: 200 });
     } catch (error) {
-        // Handle unexpected errors
         console.error('Logout error:', error);
         return NextResponse.json(
-            { error: 'Failed to logout' },
+            { error: 'An error occurred during logout' },
             { status: 500 }
         );
     }

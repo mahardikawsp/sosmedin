@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createUser } from '@/lib/auth-utils';
 import { z } from 'zod';
 
-// Validation schema for registration
+// Define validation schema for registration
 const registerSchema = z.object({
     email: z.string().email('Invalid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    username: z.string().min(3, 'Username must be at least 3 characters')
-        .max(30, 'Username cannot exceed 30 characters')
+    username: z
+        .string()
+        .min(3, 'Username must be at least 3 characters')
+        .max(30, 'Username must be at most 30 characters')
         .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
     displayName: z.string().optional(),
 });
 
@@ -17,23 +19,22 @@ export async function POST(request: NextRequest) {
         // Parse request body
         const body = await request.json();
 
-        // Validate request data
+        // Validate request body
         const validationResult = registerSchema.safeParse(body);
-
         if (!validationResult.success) {
             return NextResponse.json(
-                { error: validationResult.error.format() },
+                { error: validationResult.error.errors[0].message },
                 { status: 400 }
             );
         }
 
-        const { email, password, username, displayName } = validationResult.data;
+        const { email, username, password, displayName } = validationResult.data;
 
         // Create user
         const user = await createUser({
             email,
-            password,
             username,
+            password,
             displayName,
         });
 
@@ -41,25 +42,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
             {
                 message: 'User registered successfully',
-                user
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    username: user.username,
+                    displayName: user.displayName,
+                },
             },
             { status: 201 }
         );
-    } catch (error) {
-        // Handle specific errors
-        if (error instanceof Error) {
-            if (error.message === 'Email already in use' || error.message === 'Username already taken') {
-                return NextResponse.json(
-                    { error: error.message },
-                    { status: 409 } // Conflict
-                );
-            }
+    } catch (error: any) {
+        // Handle known errors
+        if (error.message === 'Email already in use' || error.message === 'Username already taken') {
+            return NextResponse.json({ error: error.message }, { status: 409 });
         }
 
-        // Handle unexpected errors
+        // Log unexpected errors
         console.error('Registration error:', error);
+
+        // Return generic error
         return NextResponse.json(
-            { error: 'Failed to register user' },
+            { error: 'An error occurred during registration' },
             { status: 500 }
         );
     }

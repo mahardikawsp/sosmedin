@@ -1,13 +1,8 @@
-import { findOrCreateOAuthUser } from '@/lib/auth-utils';
-import { prisma } from '@/lib/prisma';
+import { authOptions } from '@/lib/auth';
 
-// Mock Prisma client
+// Mock the prisma client
 jest.mock('@/lib/prisma', () => ({
     prisma: {
-        account: {
-            findUnique: jest.fn(),
-            create: jest.fn(),
-        },
         user: {
             findUnique: jest.fn(),
             create: jest.fn(),
@@ -15,279 +10,67 @@ jest.mock('@/lib/prisma', () => ({
     },
 }));
 
-describe('OAuth Authentication', () => {
+// Mock the auth-utils
+jest.mock('@/lib/auth-utils', () => ({
+    comparePassword: jest.fn(),
+}));
+
+// Mock the custom-prisma-adapter
+jest.mock('@/lib/custom-prisma-adapter', () => ({
+    CustomPrismaAdapter: jest.fn(() => ({})),
+}));
+
+describe('OAuth Integration', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('should return existing user when account exists', async () => {
-        // Mock existing account
-        const mockUser = {
-            id: 'user-123',
-            email: 'test@example.com',
-            username: 'testuser',
-            displayName: 'Test User',
-            passwordHash: 'hashed-password',
-            bio: null,
-            profileImageUrl: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-
-        (prisma.account.findUnique as jest.Mock).mockResolvedValue({
-            id: 'account-123',
-            userId: 'user-123',
-            type: 'oauth',
-            provider: 'google',
-            providerAccountId: '12345',
-            user: mockUser,
-        });
-
-        // Call the function
-        const result = await findOrCreateOAuthUser(
-            'google',
-            '12345',
-            {
-                email: 'test@example.com',
-                name: 'Test User',
-            }
+    it('should have Google provider configured', () => {
+        // Check if Google provider is configured
+        const googleProvider = authOptions.providers.find(
+            (provider) => provider.id === 'google'
         );
 
-        // Verify result
-        expect(result).toEqual({
-            id: 'user-123',
-            email: 'test@example.com',
-            username: 'testuser',
-            displayName: 'Test User',
-            bio: null,
-            profileImageUrl: null,
-            createdAt: expect.any(Date),
-            updatedAt: expect.any(Date),
-        });
+        expect(googleProvider).toBeDefined();
+        expect(googleProvider?.name).toBe('Google');
+    });
 
-        // Verify prisma calls
-        expect(prisma.account.findUnique).toHaveBeenCalledWith({
-            where: {
-                provider_providerAccountId: {
-                    provider: 'google',
-                    providerAccountId: '12345',
-                },
-            },
-            include: {
-                user: true,
-            },
+    it('should have credentials provider configured', () => {
+        // Check if credentials provider is configured
+        const credentialsProvider = authOptions.providers.find(
+            (provider) => provider.id === 'credentials'
+        );
+
+        expect(credentialsProvider).toBeDefined();
+        expect(credentialsProvider?.name).toBe('Credentials');
+    });
+
+    it('should have custom pages configured', () => {
+        // Check if custom pages are configured
+        expect(authOptions.pages).toEqual({
+            signIn: '/login',
+            error: '/login',
         });
     });
 
-    it('should link account to existing user with same email', async () => {
-        // Mock no existing account but existing user
-        (prisma.account.findUnique as jest.Mock).mockResolvedValue(null);
-
-        const mockUser = {
-            id: 'user-123',
-            email: 'test@example.com',
-            username: 'testuser',
-            displayName: 'Test User',
-            passwordHash: 'hashed-password',
-            bio: null,
-            profileImageUrl: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-
-        (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-        (prisma.account.create as jest.Mock).mockResolvedValue({
-            id: 'account-123',
-            userId: 'user-123',
-            type: 'oauth',
-            provider: 'google',
-            providerAccountId: '12345',
-        });
-
-        // Call the function
-        const result = await findOrCreateOAuthUser(
-            'google',
-            '12345',
-            {
-                email: 'test@example.com',
-                name: 'Test User',
-            }
-        );
-
-        // Verify result
-        expect(result).toEqual({
-            id: 'user-123',
-            email: 'test@example.com',
-            username: 'testuser',
-            displayName: 'Test User',
-            bio: null,
-            profileImageUrl: null,
-            createdAt: expect.any(Date),
-            updatedAt: expect.any(Date),
-        });
-
-        // Verify prisma calls
-        expect(prisma.account.create).toHaveBeenCalledWith({
-            data: {
-                userId: 'user-123',
-                type: 'oauth',
-                provider: 'google',
-                providerAccountId: '12345',
-            },
-        });
+    it('should use JWT strategy for sessions', () => {
+        // Check if JWT strategy is configured
+        expect(authOptions.session.strategy).toBe('jwt');
+        expect(authOptions.session.maxAge).toBe(30 * 24 * 60 * 60); // 30 days
     });
 
-    it('should create new user and account when no existing user', async () => {
-        // Mock no existing account and no existing user
-        (prisma.account.findUnique as jest.Mock).mockResolvedValue(null);
-        (prisma.user.findUnique as jest.Mock)
-            .mockResolvedValueOnce(null) // No existing user with email
-            .mockResolvedValueOnce(null); // No existing username
-
-        const mockNewUser = {
-            id: 'user-new',
-            email: 'new@example.com',
-            username: 'newuser',
-            displayName: 'New User',
-            passwordHash: null,
-            bio: null,
-            profileImageUrl: 'https://example.com/avatar.jpg',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            accounts: [
-                {
-                    id: 'account-new',
-                    userId: 'user-new',
-                    type: 'oauth',
-                    provider: 'google',
-                    providerAccountId: '67890',
-                }
-            ]
-        };
-
-        (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-
-        // Call the function
-        const result = await findOrCreateOAuthUser(
-            'google',
-            '67890',
-            {
-                email: 'new@example.com',
-                name: 'New User',
-                image: 'https://example.com/avatar.jpg',
-            }
-        );
-
-        // Verify result
-        expect(result).toEqual({
-            id: 'user-new',
-            email: 'new@example.com',
-            username: 'newuser',
-            displayName: 'New User',
-            bio: null,
-            profileImageUrl: 'https://example.com/avatar.jpg',
-            createdAt: expect.any(Date),
-            updatedAt: expect.any(Date),
-            accounts: [
-                {
-                    id: 'account-new',
-                    userId: 'user-new',
-                    type: 'oauth',
-                    provider: 'google',
-                    providerAccountId: '67890',
-                }
-            ]
-        });
-
-        // Verify prisma calls
-        expect(prisma.user.create).toHaveBeenCalledWith({
-            data: {
-                email: 'new@example.com',
-                username: 'newuser',
-                displayName: 'New User',
-                profileImageUrl: 'https://example.com/avatar.jpg',
-                accounts: {
-                    create: {
-                        type: 'oauth',
-                        provider: 'google',
-                        providerAccountId: '67890',
-                    },
-                },
-            },
-            include: {
-                accounts: true,
-            },
-        });
+    it('should have JWT callback configured', () => {
+        // Check if JWT callback is configured
+        expect(typeof authOptions.callbacks.jwt).toBe('function');
     });
 
-    it('should generate unique username when username exists', async () => {
-        // Mock no existing account and no existing user but username conflict
-        (prisma.account.findUnique as jest.Mock).mockResolvedValue(null);
-        (prisma.user.findUnique as jest.Mock)
-            .mockResolvedValueOnce(null) // No existing user with email
-            .mockResolvedValueOnce({ id: 'existing-user' }) // Username exists
-            .mockResolvedValueOnce(null); // Second username attempt is unique
+    it('should have session callback configured', () => {
+        // Check if session callback is configured
+        expect(typeof authOptions.callbacks.session).toBe('function');
+    });
 
-        const mockNewUser = {
-            id: 'user-new',
-            email: 'new@example.com',
-            username: 'newuser1',
-            displayName: 'New User',
-            passwordHash: null,
-            bio: null,
-            profileImageUrl: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            accounts: [
-                {
-                    id: 'account-new',
-                    userId: 'user-new',
-                    type: 'oauth',
-                    provider: 'google',
-                    providerAccountId: '67890',
-                }
-            ]
-        };
-
-        (prisma.user.create as jest.Mock).mockResolvedValue(mockNewUser);
-
-        // Call the function
-        const result = await findOrCreateOAuthUser(
-            'google',
-            '67890',
-            {
-                email: 'new@example.com',
-                name: 'New User',
-            }
-        );
-
-        // Verify result
-        expect(result).toEqual({
-            id: 'user-new',
-            email: 'new@example.com',
-            username: 'newuser1',
-            displayName: 'New User',
-            bio: null,
-            profileImageUrl: null,
-            createdAt: expect.any(Date),
-            updatedAt: expect.any(Date),
-            accounts: [
-                {
-                    id: 'account-new',
-                    userId: 'user-new',
-                    type: 'oauth',
-                    provider: 'google',
-                    providerAccountId: '67890',
-                }
-            ]
-        });
-
-        // Verify prisma calls for username checks
-        expect(prisma.user.findUnique).toHaveBeenCalledWith({
-            where: { username: 'newuser' },
-        });
-        expect(prisma.user.findUnique).toHaveBeenCalledWith({
-            where: { username: 'newuser1' },
-        });
+    it('should have signIn callback configured', () => {
+        // Check if signIn callback is configured
+        expect(typeof authOptions.callbacks.signIn).toBe('function');
     });
 });

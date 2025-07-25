@@ -1,55 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyToken, getUserById } from '@/lib/auth-utils';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
     try {
-        // Get the auth token from cookies
-        const cookieStore = cookies();
-        const token = cookieStore.get('auth_token')?.value;
+        // Get the current session
+        const session = await getServerSession(authOptions);
 
-        if (!token) {
-            return NextResponse.json(
-                { authenticated: false },
-                { status: 401 }
-            );
+        if (!session) {
+            return NextResponse.json({ authenticated: false }, { status: 200 });
         }
 
-        // Verify the token
-        const decoded = verifyToken(token);
-
-        if (!decoded || !decoded.id) {
-            // Clear invalid token
-            cookieStore.delete('auth_token');
-
-            return NextResponse.json(
-                { authenticated: false },
-                { status: 401 }
-            );
-        }
-
-        // Get user data
-        const user = await getUserById(decoded.id);
-
-        if (!user) {
-            // User not found, clear token
-            cookieStore.delete('auth_token');
-
-            return NextResponse.json(
-                { authenticated: false },
-                { status: 401 }
-            );
-        }
-
-        // Return user session data
+        // Return session data
         return NextResponse.json({
             authenticated: true,
-            user
-        });
+            user: {
+                id: session.user.id,
+                name: session.user.name,
+                email: session.user.email,
+                image: session.user.image,
+                username: (session.user as any).username,
+            },
+        }, { status: 200 });
     } catch (error) {
         console.error('Session error:', error);
         return NextResponse.json(
-            { error: 'Failed to get session' },
+            { error: 'An error occurred while fetching session' },
             { status: 500 }
         );
     }

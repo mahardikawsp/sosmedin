@@ -1,153 +1,210 @@
-import { NextRequest } from 'next/server';
 import { POST } from '../register/route';
-import * as authUtils from '@/lib/auth-utils';
+import { createUser } from '@/lib/auth-utils';
+import { NextRequest } from 'next/server';
 
 // Mock the auth-utils module
 jest.mock('@/lib/auth-utils', () => ({
     createUser: jest.fn(),
 }));
 
-// Mock NextRequest
-function createMockRequest(body: any) {
-    return {
-        json: jest.fn().mockResolvedValue(body),
-    } as unknown as NextRequest;
-}
-
-describe('Register API Endpoint', () => {
+describe('Register API', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     it('should register a new user successfully', async () => {
-        // Mock user data
-        const userData = {
+        // Mock createUser to return a successful response
+        const mockUser = {
+            id: 'user-123',
             email: 'test@example.com',
-            password: 'password123',
             username: 'testuser',
             displayName: 'Test User',
-        };
-
-        // Mock createUser response
-        const mockUser = {
-            id: 'user-id',
-            email: userData.email,
-            username: userData.username,
-            displayName: userData.displayName,
+            bio: null,
+            profileImageUrl: null,
             createdAt: new Date(),
             updatedAt: new Date(),
         };
 
-        (authUtils.createUser as jest.Mock).mockResolvedValue(mockUser);
+        (createUser as jest.Mock).mockResolvedValue(mockUser);
 
         // Create mock request
-        const request = createMockRequest(userData);
+        const request = new NextRequest('http://localhost:3000/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: 'test@example.com',
+                username: 'testuser',
+                password: 'password123',
+                displayName: 'Test User',
+            }),
+        });
 
-        // Call the endpoint
+        // Call the API handler
         const response = await POST(request);
-        const responseData = await response.json();
+        const data = await response.json();
 
         // Verify response
         expect(response.status).toBe(201);
-        expect(responseData.message).toBe('User registered successfully');
-        expect(responseData.user).toEqual(mockUser);
+        expect(data).toEqual({
+            message: 'User registered successfully',
+            user: {
+                id: 'user-123',
+                email: 'test@example.com',
+                username: 'testuser',
+                displayName: 'Test User',
+            },
+        });
 
-        // Verify createUser was called with correct data
-        expect(authUtils.createUser).toHaveBeenCalledWith(userData);
+        // Verify createUser was called with correct parameters
+        expect(createUser).toHaveBeenCalledWith({
+            email: 'test@example.com',
+            username: 'testuser',
+            password: 'password123',
+            displayName: 'Test User',
+        });
     });
 
-    it('should return validation errors for invalid data', async () => {
-        // Invalid user data (missing required fields)
-        const userData = {
-            email: 'invalid-email',
-            password: '123', // too short
-            username: 'a', // too short
-        };
+    it('should return validation error for invalid email', async () => {
+        // Create mock request with invalid email
+        const request = new NextRequest('http://localhost:3000/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: 'invalid-email',
+                username: 'testuser',
+                password: 'password123',
+            }),
+        });
 
-        // Create mock request
-        const request = createMockRequest(userData);
-
-        // Call the endpoint
+        // Call the API handler
         const response = await POST(request);
-        const responseData = await response.json();
+        const data = await response.json();
 
         // Verify response
         expect(response.status).toBe(400);
-        expect(responseData.error).toBeDefined();
+        expect(data.error).toContain('Invalid email');
 
         // Verify createUser was not called
-        expect(authUtils.createUser).not.toHaveBeenCalled();
+        expect(createUser).not.toHaveBeenCalled();
+    });
+
+    it('should return validation error for short password', async () => {
+        // Create mock request with short password
+        const request = new NextRequest('http://localhost:3000/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: 'test@example.com',
+                username: 'testuser',
+                password: 'short',
+            }),
+        });
+
+        // Call the API handler
+        const response = await POST(request);
+        const data = await response.json();
+
+        // Verify response
+        expect(response.status).toBe(400);
+        expect(data.error).toContain('Password must be at least 8 characters');
+
+        // Verify createUser was not called
+        expect(createUser).not.toHaveBeenCalled();
+    });
+
+    it('should return validation error for invalid username', async () => {
+        // Create mock request with invalid username
+        const request = new NextRequest('http://localhost:3000/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: 'test@example.com',
+                username: 'test user!',
+                password: 'password123',
+            }),
+        });
+
+        // Call the API handler
+        const response = await POST(request);
+        const data = await response.json();
+
+        // Verify response
+        expect(response.status).toBe(400);
+        expect(data.error).toContain('Username can only contain');
+
+        // Verify createUser was not called
+        expect(createUser).not.toHaveBeenCalled();
     });
 
     it('should handle duplicate email error', async () => {
-        // Mock user data
-        const userData = {
-            email: 'existing@example.com',
-            password: 'password123',
-            username: 'newuser',
-        };
-
-        // Mock createUser to throw an error
-        (authUtils.createUser as jest.Mock).mockRejectedValue(new Error('Email already in use'));
+        // Mock createUser to throw an error for duplicate email
+        (createUser as jest.Mock).mockRejectedValue(new Error('Email already in use'));
 
         // Create mock request
-        const request = createMockRequest(userData);
+        const request = new NextRequest('http://localhost:3000/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: 'existing@example.com',
+                username: 'newuser',
+                password: 'password123',
+            }),
+        });
 
-        // Call the endpoint
+        // Call the API handler
         const response = await POST(request);
-        const responseData = await response.json();
+        const data = await response.json();
 
         // Verify response
         expect(response.status).toBe(409);
-        expect(responseData.error).toBe('Email already in use');
+        expect(data.error).toBe('Email already in use');
     });
 
     it('should handle duplicate username error', async () => {
-        // Mock user data
-        const userData = {
-            email: 'new@example.com',
-            password: 'password123',
-            username: 'existinguser',
-        };
-
-        // Mock createUser to throw an error
-        (authUtils.createUser as jest.Mock).mockRejectedValue(new Error('Username already taken'));
+        // Mock createUser to throw an error for duplicate username
+        (createUser as jest.Mock).mockRejectedValue(new Error('Username already taken'));
 
         // Create mock request
-        const request = createMockRequest(userData);
+        const request = new NextRequest('http://localhost:3000/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: 'new@example.com',
+                username: 'existinguser',
+                password: 'password123',
+            }),
+        });
 
-        // Call the endpoint
+        // Call the API handler
         const response = await POST(request);
-        const responseData = await response.json();
+        const data = await response.json();
 
         // Verify response
         expect(response.status).toBe(409);
-        expect(responseData.error).toBe('Username already taken');
+        expect(data.error).toBe('Username already taken');
     });
 
     it('should handle unexpected errors', async () => {
-        // Mock user data
-        const userData = {
-            email: 'test@example.com',
-            password: 'password123',
-            username: 'testuser',
-        };
-
         // Mock createUser to throw an unexpected error
-        (authUtils.createUser as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
+        (createUser as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
 
         // Create mock request
-        const request = createMockRequest(userData);
+        const request = new NextRequest('http://localhost:3000/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: 'test@example.com',
+                username: 'testuser',
+                password: 'password123',
+            }),
+        });
 
         // Mock console.error to prevent test output pollution
-        jest.spyOn(console, 'error').mockImplementation(() => { });
+        const originalConsoleError = console.error;
+        console.error = jest.fn();
 
-        // Call the endpoint
+        // Call the API handler
         const response = await POST(request);
-        const responseData = await response.json();
+        const data = await response.json();
+
+        // Restore console.error
+        console.error = originalConsoleError;
 
         // Verify response
         expect(response.status).toBe(500);
-        expect(responseData.error).toBe('Failed to register user');
+        expect(data.error).toBe('An error occurred during registration');
     });
 });
