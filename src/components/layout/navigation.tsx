@@ -233,6 +233,14 @@ export default function Navigation() {
                                             >
                                                 Settings
                                             </Link>
+                                            <Link
+                                                href="/moderation"
+                                                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                role="menuitem"
+                                                onClick={() => setIsMenuOpen(false)}
+                                            >
+                                                Moderation
+                                            </Link>
                                             <button
                                                 type="button"
                                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -395,6 +403,13 @@ export default function Navigation() {
                                         onClick={() => setIsMenuOpen(false)}
                                     >
                                         Settings
+                                    </Link>
+                                    <Link
+                                        href="/moderation"
+                                        className="block px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        onClick={() => setIsMenuOpen(false)}
+                                    >
+                                        Moderation
                                     </Link>
                                     <div className="flex items-center justify-between px-4 py-2">
                                         <span className="text-base font-medium text-gray-500 dark:text-gray-300">Theme</span>
