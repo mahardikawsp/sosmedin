@@ -1,19 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import {
+    withApiOptimizations,
+    parsePaginationParams,
+    optimizeApiResponse,
+    withQueryPerformanceMonitoring
+} from '@/lib/api-optimization';
+import { QueryOptimizer, dbCache } from '@/lib/db-optimization';
+
+// Initialize query optimizer
+const queryOptimizer = new QueryOptimizer(prisma);
 
 /**
  * GET /api/feed
  * Get personalized feed with suggested users and trending content
  */
-export async function GET(request: NextRequest) {
+async function getFeedHandler(request: NextRequest) {
     try {
         const currentUserId = await getCurrentUserId();
         const { searchParams } = new URL(request.url);
 
-        const type = searchParams.get('type') || 'personalized'; // 'personalized', 'explore', 'trending'
-        const cursor = searchParams.get('cursor');
-        const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
+        const type = searchParams.get('type') || 'personalized';
+        const { cursor, limit } = parsePaginationParams(searchParams);
+        const finalLimit = Math.min(limit || 20, 50);
 
         let posts;
         let suggestedUsers: Array<{
@@ -30,41 +40,47 @@ export async function GET(request: NextRequest) {
         }> = [];
 
         if (type === 'explore' || !currentUserId) {
-            // Explore feed - show trending and popular posts
-            posts = await prisma.post.findMany({
-                where: {
-                    parentId: null, // Only top-level posts
-                },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            displayName: true,
-                            profileImageUrl: true,
+            // Use cached query for explore feed
+            const cacheKey = `explore-feed:${cursor || 'start'}:${finalLimit}:${currentUserId || 'anonymous'}`;
+            posts = await dbCache.withCache(
+                cacheKey,
+                () => withQueryPerformanceMonitoring('explore-feed', async () => {
+                    return prisma.post.findMany({
+                        where: {
+                            parentId: null,
                         },
-                    },
-                    _count: {
-                        select: {
-                            likes: true,
-                            replies: true,
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    username: true,
+                                    displayName: true,
+                                    profileImageUrl: true,
+                                },
+                            },
+                            _count: {
+                                select: {
+                                    likes: true,
+                                    replies: true,
+                                },
+                            },
+                            likes: currentUserId ? {
+                                where: { userId: currentUserId },
+                                select: { id: true },
+                            } : false,
                         },
-                    },
-                    likes: currentUserId ? {
-                        where: { userId: currentUserId },
-                        select: { id: true },
-                    } : false,
-                },
-                orderBy: [
-                    // Sort by engagement (likes + replies) and recency
-                    { createdAt: 'desc' },
-                ],
-                take: limit,
-                ...(cursor && {
-                    skip: 1,
-                    cursor: { id: cursor },
-                }),
-            });
+                        orderBy: [
+                            { createdAt: 'desc' },
+                        ],
+                        take: finalLimit,
+                        ...(cursor && {
+                            skip: 1,
+                            cursor: { id: cursor },
+                        }),
+                    });
+                })(),
+                120 // Cache for 2 minutes
+            );
 
             // Get suggested users if user is authenticated
             if (currentUserId) {
@@ -105,163 +121,43 @@ export async function GET(request: NextRequest) {
                 });
             }
         } else if (type === 'trending') {
-            // Trending posts - posts with high engagement in the last 24 hours
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-
-            posts = await prisma.post.findMany({
-                where: {
-                    parentId: null,
-                    createdAt: {
-                        gte: yesterday,
-                    },
-                },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            displayName: true,
-                            profileImageUrl: true,
-                        },
-                    },
-                    _count: {
-                        select: {
-                            likes: true,
-                            replies: true,
-                        },
-                    },
-                    likes: currentUserId ? {
-                        where: { userId: currentUserId },
-                        select: { id: true },
-                    } : false,
-                },
-                orderBy: [
-                    // Order by engagement metrics for trending
-                    { likes: { _count: 'desc' } },
-                    { replies: { _count: 'desc' } },
-                    { createdAt: 'desc' },
-                ],
-                take: limit,
-                ...(cursor && {
-                    skip: 1,
-                    cursor: { id: cursor },
-                }),
-            });
+            // Use optimized trending query with caching
+            const cacheKey = `trending-feed:${cursor || 'start'}:${finalLimit}:${currentUserId || 'anonymous'}`;
+            posts = await dbCache.withCache(
+                cacheKey,
+                () => withQueryPerformanceMonitoring('trending-feed', async () => {
+                    return queryOptimizer.getTrendingPosts(finalLimit, 24, currentUserId);
+                })(),
+                300 // Cache for 5 minutes
+            );
         } else {
-            // Personalized feed - posts from followed users
-            const followingUsers = await prisma.follow.findMany({
-                where: { followerId: currentUserId },
-                select: { followingId: true },
-            });
-
-            const followingIds = followingUsers.map(f => f.followingId);
-
-            // If user isn't following anyone, show explore feed instead
-            if (followingIds.length === 0) {
-                // Fall back to explore feed logic
-                posts = await prisma.post.findMany({
-                    where: {
-                        parentId: null, // Only top-level posts
-                    },
-                    include: {
-                        user: {
-                            select: {
-                                id: true,
-                                username: true,
-                                displayName: true,
-                                profileImageUrl: true,
-                            },
-                        },
-                        _count: {
-                            select: {
-                                likes: true,
-                                replies: true,
-                            },
-                        },
-                        likes: currentUserId ? {
-                            where: { userId: currentUserId },
-                            select: { id: true },
-                        } : false,
-                    },
-                    orderBy: [
-                        { createdAt: 'desc' },
-                    ],
-                    take: limit,
-                    ...(cursor && {
-                        skip: 1,
-                        cursor: { id: cursor },
-                    }),
-                });
-            } else {
-                // Include current user's posts in their own feed
-                followingIds.push(currentUserId);
-
-                posts = await prisma.post.findMany({
-                    where: {
-                        parentId: null,
-                        userId: {
-                            in: followingIds,
-                        },
-                    },
-                    include: {
-                        user: {
-                            select: {
-                                id: true,
-                                username: true,
-                                displayName: true,
-                                profileImageUrl: true,
-                            },
-                        },
-                        _count: {
-                            select: {
-                                likes: true,
-                                replies: true,
-                            },
-                        },
-                        likes: {
-                            where: { userId: currentUserId },
-                            select: { id: true },
-                        },
-                    },
-                    orderBy: {
-                        createdAt: 'desc',
-                    },
-                    take: limit,
-                    ...(cursor && {
-                        skip: 1,
-                        cursor: { id: cursor },
-                    }),
-                });
-            }
+            // Use optimized personalized feed query
+            const cacheKey = `personalized-feed:${currentUserId}:${cursor || 'start'}:${finalLimit}`;
+            posts = await dbCache.withCache(
+                cacheKey,
+                () => withQueryPerformanceMonitoring('personalized-feed', async () => {
+                    return queryOptimizer.getOptimizedFeed(currentUserId, cursor, finalLimit);
+                })(),
+                60 // Cache for 1 minute (shorter for personalized content)
+            );
         }
 
         // Transform posts to include isLiked flag
         const transformedPosts = posts.map(post => ({
             ...post,
-            isLiked: currentUserId ? post.likes.length > 0 : false,
+            isLiked: currentUserId && post.likes ? (post.likes.length > 0) : false,
             likes: undefined, // Remove the likes array from response
         }));
 
-        const response: {
-            posts: typeof transformedPosts;
-            hasMore: boolean;
-            nextCursor: string | null;
-            type: string;
-            suggestedUsers?: typeof suggestedUsers;
-        } = {
+        const response = {
             posts: transformedPosts,
-            hasMore: posts.length === limit,
-            nextCursor: posts.length === limit ? posts[posts.length - 1].id : null,
+            hasMore: posts.length === finalLimit,
+            nextCursor: posts.length === finalLimit ? posts[posts.length - 1].id : null,
             type,
+            ...(suggestedUsers.length > 0 && { suggestedUsers }),
         };
 
-        // Include suggested users for explore feed
-        if (suggestedUsers.length > 0) {
-            response.suggestedUsers = suggestedUsers;
-        }
-
-        return NextResponse.json(response);
+        return NextResponse.json(optimizeApiResponse(response));
     } catch (error) {
         console.error('Error fetching feed:', error);
         return NextResponse.json(
@@ -270,3 +166,10 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
+// Export optimized handler
+export const GET = withApiOptimizations(getFeedHandler, {
+    cache: { ttl: 120 }, // Cache for 2 minutes
+    rateLimit: { maxRequests: 100, windowMs: 60000 }, // 100 requests per minute
+    monitoring: true,
+});

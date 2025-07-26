@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from './prisma';
-import { User } from '@prisma/client';
+import { User } from '../generated/prisma';
 
 // Constants
 const SALT_ROUNDS = 10;

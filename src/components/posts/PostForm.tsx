@@ -129,7 +129,7 @@ export default function PostForm({
                                 className="text-xs sm:text-sm"
                                 action={isNetworkError(error) ? {
                                     label: 'Retry',
-                                    onClick: handleSubmit
+                                    onClick: () => handleSubmit({} as React.FormEvent)
                                 } : undefined}
                             />
                         </div>

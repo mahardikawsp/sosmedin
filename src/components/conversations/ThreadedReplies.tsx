@@ -96,7 +96,7 @@ export default function ThreadedReplies({
         };
 
         setReplies(prev => updateReplies(prev));
-        setExpandedReplies(prev => new Set([...prev, parentId]));
+        setExpandedReplies(prev => new Set(Array.from(prev).concat([parentId])));
     };
 
     const handleReplyUpdated = (updatedReply: Reply) => {

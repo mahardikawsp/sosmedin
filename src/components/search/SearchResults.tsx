@@ -229,11 +229,22 @@ export default function SearchResults({
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Posts</h3>
                     )}
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {posts.map((post, index) => (
-                            <FadeIn key={post.id} delay={index * 50}>
-                                <PostCard post={post} />
-                            </FadeIn>
-                        ))}
+                        {posts.map((post, index) => {
+                            // Transform post to match expected types
+                            const transformedPost = {
+                                ...post,
+                                user: {
+                                    ...post.user,
+                                    profileImageUrl: post.user.profileImageUrl || undefined
+                                }
+                            };
+
+                            return (
+                                <FadeIn key={post.id} delay={index * 50}>
+                                    <PostCard post={transformedPost} />
+                                </FadeIn>
+                            );
+                        })}
                     </div>
                 </div>
             )}

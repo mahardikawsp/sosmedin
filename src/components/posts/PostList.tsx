@@ -1,11 +1,21 @@
 'use client';
 
-import { useState, useEffect, forwardRef, useImperativeHandle, useCallback, useRef } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle, useCallback, useRef, memo } from 'react';
+import dynamic from 'next/dynamic';
 import PostCard from './PostCard';
 import { FeedSkeleton } from '@/components/ui/loading-skeleton';
 import FadeIn from '@/components/ui/fade-in';
 import { handleAPIResponse, getErrorMessage, isNetworkError } from '@/lib/error-utils';
 import { NetworkError } from '@/components/ui/error-message';
+
+// Lazy load heavy components
+const LazyPostCard = dynamic(() => import('./PostCard'), {
+    loading: () => <FeedSkeleton count={1} />,
+    ssr: false,
+});
+
+// Memoized PostCard to prevent unnecessary re-renders
+const MemoizedPostCard = memo(PostCard);
 
 interface Post {
     id: string;
@@ -84,7 +94,7 @@ const PostList = forwardRef<PostListRef, PostListProps>(function PostList({
             const fullUrl = queryString ? `${url}?${queryString}` : url;
 
             const response = await fetch(fullUrl);
-            const data = await handleAPIResponse(response);
+            const data = await handleAPIResponse(response) as any;
 
             if (type === 'user') {
                 // User posts API has different structure
@@ -236,15 +246,35 @@ const PostList = forwardRef<PostListRef, PostListProps>(function PostList({
             )}
 
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {posts.map((post, index) => (
-                    <FadeIn key={post.id} delay={index * 50}>
-                        <PostCard
-                            post={post}
-                            onPostUpdated={handlePostUpdated}
-                            onPostDeleted={handlePostDeleted}
-                        />
-                    </FadeIn>
-                ))}
+                {posts.map((post, index) => {
+                    // Transform post to match expected types
+                    const transformedPost = {
+                        ...post,
+                        user: {
+                            ...post.user,
+                            profileImageUrl: post.user.profileImageUrl || undefined
+                        }
+                    };
+
+                    return (
+                        <FadeIn key={post.id} delay={Math.min(index * 50, 500)}>
+                            {/* Use lazy loading for posts beyond the initial viewport */}
+                            {index < 5 ? (
+                                <MemoizedPostCard
+                                    post={transformedPost}
+                                    onPostUpdated={handlePostUpdated}
+                                    onPostDeleted={handlePostDeleted}
+                                />
+                            ) : (
+                                <LazyPostCard
+                                    post={transformedPost}
+                                    onPostUpdated={handlePostUpdated}
+                                    onPostDeleted={handlePostDeleted}
+                                />
+                            )}
+                        </FadeIn>
+                    );
+                })}
             </div>
 
             {/* Infinite scroll trigger */}

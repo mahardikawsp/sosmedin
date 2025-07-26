@@ -81,7 +81,7 @@ export default function ReplyForm({
             )}
 
             <div className="flex gap-3">
-                {showAvatar && (
+                {showAvatar && session && (
                     <div className="flex-shrink-0">
                         {session.user?.image ? (
                             <Image

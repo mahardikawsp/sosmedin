@@ -101,7 +101,7 @@ export const authOptions: NextAuthOptions = {
                             },
                         });
                     }
-                    
+
                     // Return true to allow sign in with the existing user
                     return true;
                 }
@@ -154,5 +154,5 @@ export const authOptions: NextAuthOptions = {
     debug: process.env.NODE_ENV === "development",
     secret: process.env.NEXTAUTH_SECRET || "default-secret-change-in-production",
     // Allow linking accounts with the same email address
-    allowDangerousEmailAccountLinking: true,
+    // allowDangerousEmailAccountLinking: true, // This option may not be available in this version
 };

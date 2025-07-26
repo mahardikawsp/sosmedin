@@ -38,11 +38,15 @@ export async function GET(request: NextRequest) {
         }
 
         // Parse notification settings or use defaults
-        const settings: NotificationSettings = user.notificationSettings as NotificationSettings || {
+        const defaultSettings: NotificationSettings = {
             likes: true,
             follows: true,
             replies: true,
         };
+
+        const settings: NotificationSettings = user.notificationSettings
+            ? (user.notificationSettings as unknown as NotificationSettings)
+            : defaultSettings;
 
         return NextResponse.json({ settings });
     } catch (error) {
@@ -107,7 +111,7 @@ export async function PUT(request: NextRequest) {
         });
 
         return NextResponse.json({
-            settings: updatedUser.notificationSettings as NotificationSettings,
+            settings: updatedUser.notificationSettings as unknown as NotificationSettings,
             message: 'Notification settings updated successfully'
         });
     } catch (error) {

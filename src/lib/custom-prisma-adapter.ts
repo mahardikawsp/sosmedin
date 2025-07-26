@@ -8,7 +8,7 @@ import type { Adapter } from 'next-auth/adapters';
  */
 export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
     return {
-        createUser: async (data) => {
+        createUser: async (data: any) => {
             // Generate a username from the email
             const baseUsername = data.email.split('@')[0].toLowerCase();
             let username = baseUsername;
@@ -134,7 +134,7 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
             });
         },
 
-        linkAccount: async (data) => {
+        linkAccount: async (data: any) => {
             await prisma.account.create({
                 data: {
                     userId: data.userId,
