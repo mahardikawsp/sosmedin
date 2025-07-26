@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { validatePostContent } from '@/lib/content-moderation';
+import { generateReplyNotification } from '@/lib/notification-service';
 
 /**
  * POST /api/posts/[id]/reply
@@ -89,16 +90,8 @@ export async function POST(
             },
         });
 
-        // Create notification for the parent post author (if not replying to own post)
-        if (parentPost.userId !== currentUserId) {
-            await prisma.notification.create({
-                data: {
-                    userId: parentPost.userId,
-                    type: 'reply',
-                    referenceId: reply.id,
-                },
-            });
-        }
+        // Generate real-time notification for the parent post author
+        await generateReplyNotification(parentId, parentPost.userId, currentUserId);
 
         return NextResponse.json(reply, { status: 201 });
     } catch (error) {

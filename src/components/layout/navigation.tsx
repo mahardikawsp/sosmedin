@@ -5,11 +5,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useSession } from '@/hooks/use-session';
+import NotificationIndicator from '@/components/notifications/notification-indicator';
+import NotificationCenter from '@/components/notifications/notification-center';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export default function Navigation() {
     const pathname = usePathname();
     const { data: session, isAuthenticated, isLoading } = useSession();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -90,6 +94,20 @@ export default function Navigation() {
                     <div className="hidden sm:ml-6 sm:flex sm:items-center">
                         {showAuthenticatedContent ? (
                             <div className="flex items-center space-x-4">
+                                {/* Theme toggle */}
+                                <ThemeToggle />
+
+                                {/* Notification indicator */}
+                                <div className="relative">
+                                    <NotificationIndicator
+                                        onClick={() => setIsNotificationCenterOpen(!isNotificationCenterOpen)}
+                                    />
+                                    <NotificationCenter
+                                        isOpen={isNotificationCenterOpen}
+                                        onClose={() => setIsNotificationCenterOpen(false)}
+                                    />
+                                </div>
+
                                 <div className="relative">
                                     <button
                                         type="button"
@@ -155,6 +173,9 @@ export default function Navigation() {
                             </div>
                         ) : !isLoading ? (
                             <div className="flex items-center space-x-4">
+                                {/* Theme toggle for non-authenticated users */}
+                                <ThemeToggle />
+
                                 <Link
                                     href="/login"
                                     className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
@@ -284,6 +305,10 @@ export default function Navigation() {
                                     >
                                         Settings
                                     </Link>
+                                    <div className="flex items-center justify-between px-4 py-2">
+                                        <span className="text-base font-medium text-gray-500 dark:text-gray-300">Theme</span>
+                                        <ThemeToggle />
+                                    </div>
                                     <button
                                         className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
                                         onClick={() => {
@@ -311,6 +336,10 @@ export default function Navigation() {
                                 >
                                     Sign up
                                 </Link>
+                                <div className="flex items-center justify-between px-4 py-2">
+                                    <span className="text-base font-medium text-gray-500 dark:text-gray-300">Theme</span>
+                                    <ThemeToggle />
+                                </div>
                             </div>
                         ) : null}
                     </div>

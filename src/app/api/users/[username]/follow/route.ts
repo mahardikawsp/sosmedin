@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { generateFollowNotification } from '@/lib/notification-service';
 
 /**
  * POST /api/users/[username]/follow
@@ -62,14 +63,8 @@ export async function POST(
             },
         });
 
-        // Create notification for the followed user
-        await prisma.notification.create({
-            data: {
-                userId: userToFollow.id,
-                type: 'follow',
-                referenceId: currentUserId,
-            },
-        });
+        // Generate real-time notification for the followed user
+        await generateFollowNotification(currentUserId, userToFollow.id);
 
         return NextResponse.json({
             message: `Successfully followed ${userToFollow.username}`,

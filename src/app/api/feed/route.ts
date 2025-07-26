@@ -16,7 +16,18 @@ export async function GET(request: NextRequest) {
         const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
 
         let posts;
-        let suggestedUsers = [];
+        let suggestedUsers: Array<{
+            id: string;
+            username: string;
+            displayName: string | null;
+            bio: string | null;
+            profileImageUrl: string | null;
+            _count: {
+                posts: number;
+                followedBy: number;
+                following: number;
+            };
+        }> = [];
 
         if (type === 'explore' || !currentUserId) {
             // Explore feed - show trending and popular posts
@@ -146,50 +157,83 @@ export async function GET(request: NextRequest) {
 
             const followingIds = followingUsers.map(f => f.followingId);
 
-            // If user isn't following anyone, show explore feed
+            // If user isn't following anyone, show explore feed instead
             if (followingIds.length === 0) {
-                return NextResponse.redirect(new URL('/api/feed?type=explore', request.url));
+                // Fall back to explore feed logic
+                posts = await prisma.post.findMany({
+                    where: {
+                        parentId: null, // Only top-level posts
+                    },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                displayName: true,
+                                profileImageUrl: true,
+                            },
+                        },
+                        _count: {
+                            select: {
+                                likes: true,
+                                replies: true,
+                            },
+                        },
+                        likes: currentUserId ? {
+                            where: { userId: currentUserId },
+                            select: { id: true },
+                        } : false,
+                    },
+                    orderBy: [
+                        { createdAt: 'desc' },
+                    ],
+                    take: limit,
+                    ...(cursor && {
+                        skip: 1,
+                        cursor: { id: cursor },
+                    }),
+                });
+            } else {
+                // Include current user's posts in their own feed
+                followingIds.push(currentUserId);
+
+                posts = await prisma.post.findMany({
+                    where: {
+                        parentId: null,
+                        userId: {
+                            in: followingIds,
+                        },
+                    },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                displayName: true,
+                                profileImageUrl: true,
+                            },
+                        },
+                        _count: {
+                            select: {
+                                likes: true,
+                                replies: true,
+                            },
+                        },
+                        likes: {
+                            where: { userId: currentUserId },
+                            select: { id: true },
+                        },
+                    },
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                    take: limit,
+                    ...(cursor && {
+                        skip: 1,
+                        cursor: { id: cursor },
+                    }),
+                });
             }
-
-            // Include current user's posts in their own feed
-            followingIds.push(currentUserId);
-
-            posts = await prisma.post.findMany({
-                where: {
-                    parentId: null,
-                    userId: {
-                        in: followingIds,
-                    },
-                },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            displayName: true,
-                            profileImageUrl: true,
-                        },
-                    },
-                    _count: {
-                        select: {
-                            likes: true,
-                            replies: true,
-                        },
-                    },
-                    likes: {
-                        where: { userId: currentUserId },
-                        select: { id: true },
-                    },
-                },
-                orderBy: {
-                    createdAt: 'desc',
-                },
-                take: limit,
-                ...(cursor && {
-                    skip: 1,
-                    cursor: { id: cursor },
-                }),
-            });
         }
 
         // Transform posts to include isLiked flag
@@ -199,7 +243,13 @@ export async function GET(request: NextRequest) {
             likes: undefined, // Remove the likes array from response
         }));
 
-        const response: any = {
+        const response: {
+            posts: typeof transformedPosts;
+            hasMore: boolean;
+            nextCursor: string | null;
+            type: string;
+            suggestedUsers?: typeof suggestedUsers;
+        } = {
             posts: transformedPosts,
             hasMore: posts.length === limit,
             nextCursor: posts.length === limit ? posts[posts.length - 1].id : null,

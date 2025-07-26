@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { generateLikeNotification } from '@/lib/notification-service';
 
 /**
  * POST /api/posts/[id]/like
@@ -65,16 +66,8 @@ export async function POST(
             },
         });
 
-        // Create notification for the post author (if not liking own post)
-        if (post.userId !== currentUserId) {
-            await prisma.notification.create({
-                data: {
-                    userId: post.userId,
-                    type: 'like',
-                    referenceId: postId,
-                },
-            });
-        }
+        // Generate real-time notification for the post author
+        await generateLikeNotification(postId, post.userId, currentUserId);
 
         return NextResponse.json({ message: 'Post liked successfully' });
     } catch (error) {
