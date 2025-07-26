@@ -58,7 +58,7 @@ export default function Feed({ type = 'personalized', showPostForm = true, showH
         <ResponsiveContainer maxWidth="lg" padding="md" className={showHeader ? "py-4 sm:py-6" : ""}>
             {/* Feed Header */}
             {showHeader && (
-                <div className="mb-4 sm:mb-6">
+                <div className="mb-4 sm:mb-6" role="banner">
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
@@ -74,12 +74,11 @@ export default function Feed({ type = 'personalized', showPostForm = true, showH
                             type="button"
                             onClick={handleRefresh}
                             disabled={refreshing}
-                            className={`p-2 rounded-full transition-colors ${refreshing
+                            className={`p-2 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${refreshing
                                 ? 'text-gray-400 cursor-not-allowed'
                                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'
                                 }`}
-                            title="Refresh feed"
-                            aria-label="Refresh feed"
+                            aria-label={refreshing ? "Refreshing feed..." : "Refresh feed"}
                         >
                             <svg
                                 className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
@@ -102,13 +101,13 @@ export default function Feed({ type = 'personalized', showPostForm = true, showH
 
             {/* Post Form */}
             {showPostForm && type === 'personalized' && (
-                <div className={showHeader ? "mt-4 sm:mt-6" : "mb-4 sm:mb-6"}>
+                <div className={showHeader ? "mt-4 sm:mt-6" : "mb-4 sm:mb-6"} role="region" aria-label="Create new post">
                     <PostForm onPostCreated={handlePostCreated} />
                 </div>
             )}
 
             {/* Feed Content */}
-            <div className={showHeader ? "mt-4 sm:mt-6" : ""}>
+            <div className={showHeader ? "mt-4 sm:mt-6" : ""} role="main" aria-label="Posts feed">
                 <PostList
                     ref={postListRef}
                     type={type}

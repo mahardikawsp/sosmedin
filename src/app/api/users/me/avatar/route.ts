@@ -61,6 +61,8 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(bytes);
         await writeFile(filepath, buffer);
 
+        console.log(`Avatar uploaded successfully: ${filepath}`);
+
         // Update user's profile image URL
         const profileImageUrl = `/uploads/avatars/${filename}`;
         const updatedUser = await prisma.user.update({
@@ -73,6 +75,8 @@ export async function POST(request: NextRequest) {
                 profileImageUrl: true,
             },
         });
+
+        console.log(`Profile image URL updated: ${profileImageUrl}`);
 
         return NextResponse.json({
             message: 'Profile picture updated successfully',

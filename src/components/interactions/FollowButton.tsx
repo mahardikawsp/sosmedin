@@ -77,7 +77,15 @@ export default function FollowButton({
             type="button"
             onClick={handleFollow}
             disabled={isLoading}
-            className={`${getButtonClasses()} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`${getButtonClasses()} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+            aria-label={
+                isLoading
+                    ? 'Loading...'
+                    : isFollowing
+                        ? `Unfollow ${username}`
+                        : `Follow ${username}`
+            }
+            aria-pressed={isFollowing}
         >
             {isLoading ? 'Loading...' : isFollowing ? 'Unfollow' : 'Follow'}
         </button>

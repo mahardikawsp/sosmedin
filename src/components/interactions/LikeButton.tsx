@@ -73,14 +73,22 @@ export default function LikeButton({
                 ? 'text-red-500 hover:text-red-600'
                 : 'text-gray-500 dark:text-gray-400 hover:text-red-500'
                 } ${!isAuthenticated ? 'cursor-not-allowed opacity-50' : 'hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-105'
-                } ${isLoading ? 'opacity-50' : ''} rounded-full p-1 active:scale-95`}
-            title={isAuthenticated ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
+                } ${isLoading ? 'opacity-50' : ''} rounded-full p-1 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
+            aria-label={
+                !isAuthenticated
+                    ? 'Sign in to like this post'
+                    : isLiked
+                        ? `Unlike this post. Currently ${likeCount} ${likeCount === 1 ? 'like' : 'likes'}`
+                        : `Like this post. Currently ${likeCount} ${likeCount === 1 ? 'like' : 'likes'}`
+            }
+            aria-pressed={isLiked}
         >
             <svg
                 className={`${sizeClasses[size]} transition-all duration-200 ${isLiked ? 'animate-pulse' : ''}`}
                 fill={isLiked ? 'currentColor' : 'none'}
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
             >
                 <path
                     strokeLinecap="round"
@@ -90,7 +98,7 @@ export default function LikeButton({
                 />
             </svg>
             {showCount && (
-                <span className={`transition-all duration-200 ${isLiked ? 'font-semibold' : ''}`}>
+                <span className={`transition-all duration-200 ${isLiked ? 'font-semibold' : ''}`} aria-hidden="true">
                     {likeCount}
                 </span>
             )}

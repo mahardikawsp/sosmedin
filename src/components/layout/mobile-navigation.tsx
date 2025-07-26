@@ -64,37 +64,49 @@ export default function MobileNavigation() {
     return (
         <>
             {/* Bottom Navigation Bar */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:hidden z-50">
-                <div className="flex justify-around items-center py-2">
+            <nav
+                className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:hidden z-50"
+                aria-label="Mobile navigation"
+            >
+                <ul className="flex justify-around items-center py-2" role="menubar">
                     {navItems.map((item) => (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${pathname === item.href
+                        <li key={item.name} role="none">
+                            <Link
+                                href={item.href}
+                                role="menuitem"
+                                aria-current={pathname === item.href ? 'page' : undefined}
+                                aria-label={`Navigate to ${item.name}`}
+                                className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${pathname === item.href
                                     ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
                                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                }`}
-                        >
-                            {item.icon}
-                            <span className="text-xs mt-1">{item.name}</span>
-                        </Link>
+                                    }`}
+                            >
+                                <span aria-hidden="true">{item.icon}</span>
+                                <span className="text-xs mt-1">{item.name}</span>
+                            </Link>
+                        </li>
                     ))}
 
                     {/* Notifications */}
-                    <div className="relative">
+                    <li role="none">
                         <button
+                            type="button"
                             onClick={() => setIsNotificationCenterOpen(!isNotificationCenterOpen)}
-                            className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${isNotificationCenterOpen
-                                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                            role="menuitem"
+                            aria-expanded={isNotificationCenterOpen}
+                            aria-haspopup="dialog"
+                            aria-label="Open notifications"
+                            className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isNotificationCenterOpen
+                                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                 }`}
                         >
                             <NotificationIndicator showBadgeOnly />
                             <span className="text-xs mt-1">Alerts</span>
                         </button>
-                    </div>
-                </div>
-            </div>
+                    </li>
+                </ul>
+            </nav>
 
             {/* Notification Center */}
             <NotificationCenter

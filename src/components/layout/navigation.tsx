@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useSession } from '@/hooks/use-session';
 import NotificationIndicator from '@/components/notifications/notification-indicator';
 import NotificationCenter from '@/components/notifications/notification-center';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
+import KeyboardShortcutsHelp from '@/components/ui/keyboard-shortcuts-help';
 
 export default function Navigation() {
     const pathname = usePathname();
+    const router = useRouter();
     const { data: session, isAuthenticated, isLoading } = useSession();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+    const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -50,6 +54,70 @@ export default function Navigation() {
         setIsMenuOpen(false);
     }, [isAuthenticated]);
 
+    // Register keyboard shortcuts
+    useKeyboardShortcuts([
+        {
+            key: 'h',
+            description: 'Go to home feed',
+            action: () => {
+                if (isAuthenticated) {
+                    router.push('/feed');
+                }
+            }
+        },
+        {
+            key: 'e',
+            description: 'Go to explore page',
+            action: () => {
+                if (isAuthenticated) {
+                    router.push('/explore');
+                }
+            }
+        },
+        {
+            key: 's',
+            description: 'Go to search page',
+            action: () => {
+                if (isAuthenticated) {
+                    router.push('/search');
+                }
+            }
+        },
+        {
+            key: 'p',
+            description: 'Go to profile page',
+            action: () => {
+                if (isAuthenticated && session?.user?.username) {
+                    router.push(`/profile/${session.user.username}`);
+                }
+            }
+        },
+        {
+            key: 'n',
+            description: 'Toggle notifications',
+            action: () => {
+                if (isAuthenticated) {
+                    setIsNotificationCenterOpen(!isNotificationCenterOpen);
+                }
+            }
+        },
+        {
+            key: '?',
+            shiftKey: true,
+            description: 'Show keyboard shortcuts help',
+            action: () => setShowKeyboardHelp(true)
+        },
+        {
+            key: 'Escape',
+            description: 'Close open menus/dialogs',
+            action: () => {
+                setIsMenuOpen(false);
+                setIsNotificationCenterOpen(false);
+                setShowKeyboardHelp(false);
+            }
+        }
+    ]);
+
 
 
     const navItems = [
@@ -63,6 +131,8 @@ export default function Navigation() {
         <nav
             key={`nav-${isAuthenticated}-${session?.user?.id || 'anonymous'}`}
             className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+            role="navigation"
+            aria-label="Main navigation"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
@@ -72,7 +142,7 @@ export default function Navigation() {
                                 Sosmedin
                             </Link>
                         </div>
-                        <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <div className="hidden sm:ml-6 sm:flex sm:space-x-8" role="menubar">
                             {navItems.map((item) => {
                                 if (!showAuthenticatedContent && item.requiresAuth) return null;
 
@@ -80,10 +150,12 @@ export default function Navigation() {
                                     <Link
                                         key={item.name}
                                         href={item.href}
+                                        role="menuitem"
+                                        aria-current={pathname === item.href ? 'page' : undefined}
                                         className={`${pathname === item.href
                                             ? 'border-blue-500 text-gray-900 dark:text-white'
                                             : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200'
-                                            } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                                            } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                                     >
                                         {item.name}
                                     </Link>
@@ -101,6 +173,9 @@ export default function Navigation() {
                                 <div className="relative">
                                     <NotificationIndicator
                                         onClick={() => setIsNotificationCenterOpen(!isNotificationCenterOpen)}
+                                        aria-expanded={isNotificationCenterOpen}
+                                        aria-haspopup="dialog"
+                                        aria-label="Notifications"
                                     />
                                     <NotificationCenter
                                         isOpen={isNotificationCenterOpen}
@@ -111,10 +186,11 @@ export default function Navigation() {
                                 <div className="relative">
                                     <button
                                         type="button"
-                                        className="flex rounded-full bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="flex rounded-full bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                                         id="user-menu-button"
                                         aria-expanded={isMenuOpen}
-                                        aria-haspopup="true"
+                                        aria-haspopup="menu"
+                                        aria-label={`User menu for ${session?.user?.name || 'user'}`}
                                         onClick={toggleMenu}
                                     >
                                         <span className="sr-only">Open user menu</span>
@@ -158,6 +234,18 @@ export default function Navigation() {
                                                 Settings
                                             </Link>
                                             <button
+                                                type="button"
+                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                role="menuitem"
+                                                onClick={() => {
+                                                    setIsMenuOpen(false);
+                                                    setShowKeyboardHelp(true);
+                                                }}
+                                            >
+                                                Keyboard Shortcuts
+                                            </button>
+                                            <button
+                                                type="button"
                                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                                                 role="menuitem"
                                                 onClick={() => {
@@ -199,6 +287,7 @@ export default function Navigation() {
                                 className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-200 hover:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
                                 aria-controls="mobile-menu"
                                 aria-expanded={isMenuOpen}
+                                aria-label="Toggle mobile menu"
                                 onClick={toggleMenu}
                             >
                                 <span className="sr-only">Open main menu</span>
@@ -242,8 +331,8 @@ export default function Navigation() {
             </div>
 
             {isMenuOpen && (
-                <div className="sm:hidden" id="mobile-menu">
-                    <div className="pt-2 pb-3 space-y-1">
+                <div className="sm:hidden" id="mobile-menu" role="menu" aria-labelledby="user-menu-button">
+                    <div className="pt-2 pb-3 space-y-1" role="none">
                         {navItems.map((item) => {
                             if (!showAuthenticatedContent && item.requiresAuth) return null;
 
@@ -251,10 +340,12 @@ export default function Navigation() {
                                 <Link
                                     key={item.name}
                                     href={item.href}
+                                    role="menuitem"
+                                    aria-current={pathname === item.href ? 'page' : undefined}
                                     className={`${pathname === item.href
                                         ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
                                         : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200'
-                                        } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
+                                        } block pl-3 pr-4 py-2 border-l-4 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                                     onClick={() => setIsMenuOpen(false)}
                                 >
                                     {item.name}
@@ -310,6 +401,17 @@ export default function Navigation() {
                                         <ThemeToggle />
                                     </div>
                                     <button
+                                        type="button"
+                                        className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        onClick={() => {
+                                            setIsMenuOpen(false);
+                                            setShowKeyboardHelp(true);
+                                        }}
+                                    >
+                                        Keyboard Shortcuts
+                                    </button>
+                                    <button
+                                        type="button"
                                         className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
                                         onClick={() => {
                                             setIsMenuOpen(false);
@@ -345,6 +447,12 @@ export default function Navigation() {
                     </div>
                 </div>
             )}
+
+            {/* Keyboard Shortcuts Help */}
+            <KeyboardShortcutsHelp
+                isOpen={showKeyboardHelp}
+                onClose={() => setShowKeyboardHelp(false)}
+            />
         </nav>
     );
 }

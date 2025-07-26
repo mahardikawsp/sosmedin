@@ -239,42 +239,44 @@ const PostList = forwardRef<PostListRef, PostListProps>(function PostList({
         <div>
             {/* Refresh indicator */}
             {refreshing && (
-                <div className="flex justify-center items-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                <div className="flex justify-center items-center py-4" role="status" aria-live="polite">
+                    <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500" aria-hidden="true"></div>
                     <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Refreshing...</span>
                 </div>
             )}
 
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {posts.map((post, index) => {
-                    // Transform post to match expected types
-                    const transformedPost = {
-                        ...post,
-                        user: {
-                            ...post.user,
-                            profileImageUrl: post.user.profileImageUrl || undefined
-                        }
-                    };
+            <div aria-label="Posts list" role="region">
+                <div className="divide-y divide-gray-200 dark:divide-gray-700" role="feed" aria-busy={loading}>
+                    {posts.map((post, index) => {
+                        // Transform post to match expected types
+                        const transformedPost = {
+                            ...post,
+                            user: {
+                                ...post.user,
+                                profileImageUrl: post.user.profileImageUrl || undefined
+                            }
+                        };
 
-                    return (
-                        <FadeIn key={post.id} delay={Math.min(index * 50, 500)}>
-                            {/* Use lazy loading for posts beyond the initial viewport */}
-                            {index < 5 ? (
-                                <MemoizedPostCard
-                                    post={transformedPost}
-                                    onPostUpdated={handlePostUpdated}
-                                    onPostDeleted={handlePostDeleted}
-                                />
-                            ) : (
-                                <LazyPostCard
-                                    post={transformedPost}
-                                    onPostUpdated={handlePostUpdated}
-                                    onPostDeleted={handlePostDeleted}
-                                />
-                            )}
-                        </FadeIn>
-                    );
-                })}
+                        return (
+                            <FadeIn key={post.id} delay={Math.min(index * 50, 500)}>
+                                {/* Use lazy loading for posts beyond the initial viewport */}
+                                {index < 5 ? (
+                                    <MemoizedPostCard
+                                        post={transformedPost}
+                                        onPostUpdated={handlePostUpdated}
+                                        onPostDeleted={handlePostDeleted}
+                                    />
+                                ) : (
+                                    <LazyPostCard
+                                        post={transformedPost}
+                                        onPostUpdated={handlePostUpdated}
+                                        onPostDeleted={handlePostDeleted}
+                                    />
+                                )}
+                            </FadeIn>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Infinite scroll trigger */}
@@ -282,10 +284,13 @@ const PostList = forwardRef<PostListRef, PostListProps>(function PostList({
                 <div
                     ref={loadMoreRef}
                     className="flex justify-center items-center py-8"
+                    role="status"
+                    aria-live="polite"
+                    aria-label="Loading more posts"
                 >
                     {loading && (
                         <>
-                            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500" aria-hidden="true"></div>
                             <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Loading more...</span>
                         </>
                     )}

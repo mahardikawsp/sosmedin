@@ -109,10 +109,18 @@ export default function PostCard({
     };
 
     return (
-        <div className="border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <div
+            className="border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            role="article"
+            aria-labelledby={`post-${localPost.id}-author`}
+        >
             {/* Parent post preview (for replies) */}
             {localPost.parent && (
-                <div className="mb-3 p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border-l-4 border-gray-300 dark:border-gray-600">
+                <div
+                    className="mb-3 p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border-l-4 border-gray-300 dark:border-gray-600"
+                    role="complementary"
+                    aria-label="Original post being replied to"
+                >
                     <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         Replying to <Link href={`/${localPost.parent.user.username}`} className="text-blue-500 hover:underline">
                             @{localPost.parent.user.username}
@@ -129,18 +137,21 @@ export default function PostCard({
 
             <div className="flex gap-2 sm:gap-3">
                 <div className="flex-shrink-0">
-                    <Link href={`/${localPost.user.username}`}>
+                    <Link href={`/${localPost.user.username}`} aria-label={`View ${localPost.user.displayName}'s profile`}>
                         {localPost.user.profileImageUrl ? (
                             <Image
                                 src={localPost.user.profileImageUrl}
-                                alt={localPost.user.displayName}
+                                alt={`${localPost.user.displayName}'s profile picture`}
                                 width={36}
                                 height={36}
                                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover"
                             />
                         ) : (
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                                <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400">
+                            <div
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center"
+                                aria-label={`${localPost.user.displayName}'s profile picture`}
+                            >
+                                <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400" aria-hidden="true">
                                     {localPost.user.displayName.charAt(0).toUpperCase()}
                                 </span>
                             </div>
@@ -149,19 +160,35 @@ export default function PostCard({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-                        <Link href={`/${localPost.user.username}`} className="font-bold hover:underline text-sm sm:text-base truncate">
+                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap" role="banner">
+                        <Link
+                            href={`/${localPost.user.username}`}
+                            className="font-bold hover:underline text-sm sm:text-base truncate"
+                            id={`post-${localPost.id}-author`}
+                        >
                             {localPost.user.displayName}
                         </Link>
-                        <Link href={`/${localPost.user.username}`} className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm hover:underline truncate">
+                        <Link
+                            href={`/${localPost.user.username}`}
+                            className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm hover:underline truncate"
+                            aria-label={`Username: ${localPost.user.username}`}
+                        >
                             @{localPost.user.username}
                         </Link>
-                        <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">·</span>
-                        <Link href={`/posts/${localPost.id}`} className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm hover:underline">
-                            {formatDate(localPost.createdAt)}
+                        <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm" aria-hidden="true">·</span>
+                        <Link
+                            href={`/posts/${localPost.id}`}
+                            className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm hover:underline"
+                            aria-label={`Posted ${formatDate(localPost.createdAt)}`}
+                        >
+                            <time dateTime={localPost.createdAt}>
+                                {formatDate(localPost.createdAt)}
+                            </time>
                         </Link>
                         {localPost.isEdited && (
-                            <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">· edited</span>
+                            <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm" aria-label="This post has been edited">
+                                · edited
+                            </span>
                         )}
                     </div>
 
@@ -178,7 +205,7 @@ export default function PostCard({
                     )}
 
                     {/* Actions */}
-                    <div className="flex items-center gap-4 sm:gap-6 mt-3 text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-4 sm:gap-6 mt-3 text-gray-500 dark:text-gray-400" role="group" aria-label="Post actions">
                         {/* Like button */}
                         <LikeButton
                             postId={localPost.id}
@@ -191,9 +218,10 @@ export default function PostCard({
                         {showReplies && (
                             <Link
                                 href={`/posts/${localPost.id}`}
-                                className="flex items-center gap-1 text-xs sm:text-sm hover:text-blue-500 transition-colors"
+                                className="flex items-center gap-1 text-xs sm:text-sm hover:text-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                                aria-label={`Reply to this post. ${localPost._count.replies} ${localPost._count.replies === 1 ? 'reply' : 'replies'}`}
                             >
-                                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                 </svg>
                                 <span>{localPost._count.replies}</span>
@@ -204,15 +232,19 @@ export default function PostCard({
                         {isOwner && (
                             <>
                                 <button
+                                    type="button"
                                     onClick={() => setIsEditing(true)}
-                                    className="text-xs sm:text-sm hover:text-blue-500 transition-colors"
+                                    className="text-xs sm:text-sm hover:text-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-1"
+                                    aria-label="Edit this post"
                                 >
                                     Edit
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={handleDelete}
                                     disabled={isDeleting}
-                                    className="text-xs sm:text-sm hover:text-red-500 transition-colors disabled:opacity-50"
+                                    className="text-xs sm:text-sm hover:text-red-500 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
+                                    aria-label="Delete this post"
                                 >
                                     {isDeleting ? 'Deleting...' : 'Delete'}
                                 </button>

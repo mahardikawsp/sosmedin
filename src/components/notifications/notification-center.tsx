@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from '@/hooks/use-session';
 import { useRealtimeNotifications } from '@/hooks/use-real-time-notifications';
 import { formatDistanceToNow } from 'date-fns';
+import { useArrowKeyNavigation } from '@/hooks/use-keyboard-shortcuts';
 
 interface Notification {
     id: string;
@@ -26,6 +27,7 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
     const [hasMore, setHasMore] = useState(true);
     const [page, setPage] = useState(1);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const notificationListRef = useRef<HTMLDivElement>(null);
 
     // Use real-time notifications hook
     const { decrementUnreadCount, resetUnreadCount } = useRealtimeNotifications(
@@ -44,6 +46,14 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
             ]);
         }
     );
+
+    // Enable arrow key navigation for notifications
+    useArrowKeyNavigation(notificationListRef, 'button[data-notification-id]', {
+        orientation: 'vertical',
+        onSelect: (element) => {
+            element.click();
+        }
+    });
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -186,27 +196,31 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
 
     if (isMobile) {
         return (
-            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 sm:hidden">
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 sm:hidden" role="dialog" aria-modal="true" aria-labelledby="mobile-notifications-title">
                 <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-lg max-h-[80vh] flex flex-col">
                     {/* Mobile Header */}
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between" role="banner">
+                        <h3 id="mobile-notifications-title" className="text-lg font-medium text-gray-900 dark:text-white">
                             Notifications
                         </h3>
                         <div className="flex items-center space-x-2">
                             {notifications.some(n => !n.isRead) && (
                                 <button
+                                    type="button"
                                     onClick={markAllAsRead}
-                                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
+                                    aria-label="Mark all notifications as read"
                                 >
                                     Mark all read
                                 </button>
                             )}
                             <button
+                                type="button"
                                 onClick={onClose}
-                                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                                aria-label="Close notifications"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
@@ -214,56 +228,68 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
                     </div>
 
                     {/* Mobile Notifications list */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto" role="main" aria-label="Notifications list">
                         {isLoading && notifications.length === 0 ? (
-                            <div className="px-4 py-8 text-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                            <div className="px-4 py-8 text-center" role="status" aria-live="polite">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" aria-hidden="true"></div>
                                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading notifications...</p>
                             </div>
                         ) : notifications.length === 0 ? (
                             <div className="px-4 py-8 text-center">
-                                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                 </svg>
                                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
                             </div>
                         ) : (
                             <>
-                                {notifications.map((notification) => (
-                                    <div
-                                        key={notification.id}
-                                        className={`px-4 py-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 ${!notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                                            }`}
-                                        onClick={() => !notification.isRead && markAsRead(notification.id)}
-                                    >
-                                        <div className="flex items-start space-x-3">
-                                            <div className="flex-shrink-0">
-                                                {getNotificationIcon(notification.type)}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-gray-900 dark:text-white">
-                                                    Someone {getNotificationMessage(notification)}
-                                                </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                                                </p>
-                                            </div>
-                                            {!notification.isRead && (
-                                                <div className="flex-shrink-0">
-                                                    <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                                <div ref={notificationListRef}>
+                                    <ul role="list">
+                                        {notifications.map((notification) => (
+                                            <li key={notification.id}>
+                                                <button
+                                                    type="button"
+                                                    data-notification-id={notification.id}
+                                                    className={`w-full px-4 py-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${!notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                                        }`}
+                                                    onClick={() => !notification.isRead && markAsRead(notification.id)}
+                                                    aria-label={`${getNotificationMessage(notification)} notification from ${formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}${!notification.isRead ? '. Unread' : ''}`}
+                                                >
+                                                    <div className="flex items-start space-x-3">
+                                                        <div className="flex-shrink-0" aria-hidden="true">
+                                                            {getNotificationIcon(notification.type)}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm text-gray-900 dark:text-white">
+                                                                Someone {getNotificationMessage(notification)}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                                <time dateTime={notification.createdAt}>
+                                                                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                                                </time>
+                                                            </p>
+                                                        </div>
+                                                        {!notification.isRead && (
+                                                            <div className="flex-shrink-0" aria-label="Unread notification">
+                                                                <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
 
                                 {/* Load more button */}
                                 {hasMore && (
                                     <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
                                         <button
+                                            type="button"
                                             onClick={loadMore}
                                             disabled={isLoading}
-                                            className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50"
+                                            className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
+                                            aria-label="Load more notifications"
                                         >
                                             {isLoading ? 'Loading...' : 'Load more'}
                                         </button>
@@ -281,17 +307,22 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
         <div
             ref={dropdownRef}
             className="absolute right-0 z-50 mt-2 w-80 origin-top-right rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="desktop-notifications-title"
         >
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700" role="banner">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    <h3 id="desktop-notifications-title" className="text-lg font-medium text-gray-900 dark:text-white">
                         Notifications
                     </h3>
                     {notifications.some(n => !n.isRead) && (
                         <button
+                            type="button"
                             onClick={markAllAsRead}
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
+                            aria-label="Mark all notifications as read"
                         >
                             Mark all read
                         </button>
@@ -300,56 +331,68 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
             </div>
 
             {/* Notifications list */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto" role="main" aria-label="Notifications list">
                 {isLoading && notifications.length === 0 ? (
-                    <div className="px-4 py-8 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="px-4 py-8 text-center" role="status" aria-live="polite">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" aria-hidden="true"></div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading notifications...</p>
                     </div>
                 ) : notifications.length === 0 ? (
                     <div className="px-4 py-8 text-center">
-                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
                     </div>
                 ) : (
                     <>
-                        {notifications.map((notification) => (
-                            <div
-                                key={notification.id}
-                                className={`px-4 py-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${!notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                                    }`}
-                                onClick={() => !notification.isRead && markAsRead(notification.id)}
-                            >
-                                <div className="flex items-start space-x-3">
-                                    <div className="flex-shrink-0">
-                                        {getNotificationIcon(notification.type)}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm text-gray-900 dark:text-white">
-                                            Someone {getNotificationMessage(notification)}
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                                        </p>
-                                    </div>
-                                    {!notification.isRead && (
-                                        <div className="flex-shrink-0">
-                                            <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                        <div ref={notificationListRef}>
+                            <ul role="list">
+                                {notifications.map((notification) => (
+                                    <li key={notification.id}>
+                                        <button
+                                            type="button"
+                                            data-notification-id={notification.id}
+                                            className={`w-full px-4 py-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${!notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                                }`}
+                                            onClick={() => !notification.isRead && markAsRead(notification.id)}
+                                            aria-label={`${getNotificationMessage(notification)} notification from ${formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}${!notification.isRead ? '. Unread' : ''}`}
+                                        >
+                                            <div className="flex items-start space-x-3">
+                                                <div className="flex-shrink-0" aria-hidden="true">
+                                                    {getNotificationIcon(notification.type)}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm text-gray-900 dark:text-white">
+                                                        Someone {getNotificationMessage(notification)}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        <time dateTime={notification.createdAt}>
+                                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                                        </time>
+                                                    </p>
+                                                </div>
+                                                {!notification.isRead && (
+                                                    <div className="flex-shrink-0" aria-label="Unread notification">
+                                                        <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
 
                         {/* Load more button */}
                         {hasMore && (
                             <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
                                 <button
+                                    type="button"
                                     onClick={loadMore}
                                     disabled={isLoading}
-                                    className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50"
+                                    className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
+                                    aria-label="Load more notifications"
                                 >
                                     {isLoading ? 'Loading...' : 'Load more'}
                                 </button>

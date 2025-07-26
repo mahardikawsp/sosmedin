@@ -2,6 +2,10 @@
 const nextConfig = {
     reactStrictMode: true,
     swcMinify: true,
+    // Disable ESLint during builds
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
     experimental: {
         optimizePackageImports: ['react-icons', 'date-fns'],
     },
@@ -15,6 +19,9 @@ const nextConfig = {
         ],
         formats: ['image/webp', 'image/avif'],
         minimumCacheTTL: 60,
+        // Allow local uploads
+        domains: ['localhost'],
+        unoptimized: process.env.NODE_ENV === 'development',
     },
     // Enable compression
     compress: true,

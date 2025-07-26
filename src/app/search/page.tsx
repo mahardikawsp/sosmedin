@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import SearchInput from '@/components/search/SearchInput';
 import SearchResults from '@/components/search/SearchResults';
@@ -40,7 +40,7 @@ interface Post {
     isLiked: boolean;
 }
 
-export default function SearchPage() {
+function SearchPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -173,5 +173,24 @@ export default function SearchPage() {
                 onTypeChange={handleTypeChange}
             />
         </div>
+    );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={
+            <div className="max-w-2xl mx-auto py-4 sm:py-6 px-4">
+                <div className="mb-4 sm:mb-6">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                        Search
+                    </h1>
+                    <div className="animate-pulse">
+                        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                    </div>
+                </div>
+            </div>
+        }>
+            <SearchPageContent />
+        </Suspense>
     );
 }
