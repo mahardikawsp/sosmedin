@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from '@/hooks/use-session';
 import { useRealtimeNotifications } from '@/hooks/use-real-time-notifications';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from '@/lib/date-utils';
 import { useArrowKeyNavigation } from '@/hooks/use-keyboard-shortcuts';
 
 interface Notification {
@@ -253,7 +253,7 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
                                                     className={`w-full px-4 py-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${!notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                                                         }`}
                                                     onClick={() => !notification.isRead && markAsRead(notification.id)}
-                                                    aria-label={`${getNotificationMessage(notification)} notification from ${formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}${!notification.isRead ? '. Unread' : ''}`}
+                                                    aria-label={`${getNotificationMessage(notification)} notification from ${formatDistanceToNow(new Date(notification.createdAt))}${!notification.isRead ? '. Unread' : ''}`}
                                                 >
                                                     <div className="flex items-start space-x-3">
                                                         <div className="flex-shrink-0" aria-hidden="true">
@@ -265,7 +265,7 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
                                                             </p>
                                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                                                 <time dateTime={notification.createdAt}>
-                                                                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                                                    {formatDistanceToNow(new Date(notification.createdAt))}
                                                                 </time>
                                                             </p>
                                                         </div>
@@ -356,7 +356,7 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
                                             className={`w-full px-4 py-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${!notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                                                 }`}
                                             onClick={() => !notification.isRead && markAsRead(notification.id)}
-                                            aria-label={`${getNotificationMessage(notification)} notification from ${formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}${!notification.isRead ? '. Unread' : ''}`}
+                                            aria-label={`${getNotificationMessage(notification)} notification from ${formatDistanceToNow(new Date(notification.createdAt))}${!notification.isRead ? '. Unread' : ''}`}
                                         >
                                             <div className="flex items-start space-x-3">
                                                 <div className="flex-shrink-0" aria-hidden="true">
@@ -368,7 +368,7 @@ export default function NotificationCenter({ isOpen, onClose, isMobile = false }
                                                     </p>
                                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                                         <time dateTime={notification.createdAt}>
-                                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                                            {formatDistanceToNow(new Date(notification.createdAt))}
                                                         </time>
                                                     </p>
                                                 </div>

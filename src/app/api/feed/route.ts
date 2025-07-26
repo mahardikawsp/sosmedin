@@ -89,7 +89,7 @@ async function getFeedHandler(request: NextRequest) {
                     select: { followingId: true },
                 });
 
-                const followingUserIds = followingIds.map(f => f.followingId);
+                const followingUserIds = followingIds.map((f: { followingId: string }) => f.followingId);
                 followingUserIds.push(currentUserId); // Exclude current user
 
                 suggestedUsers = await prisma.user.findMany({
@@ -143,7 +143,7 @@ async function getFeedHandler(request: NextRequest) {
         }
 
         // Transform posts to include isLiked flag
-        const transformedPosts = posts.map(post => ({
+        const transformedPosts = posts.map((post: any) => ({
             ...post,
             isLiked: currentUserId && post.likes ? (post.likes.length > 0) : false,
             likes: undefined, // Remove the likes array from response

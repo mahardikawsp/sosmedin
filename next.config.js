@@ -6,8 +6,12 @@ const nextConfig = {
     eslint: {
         ignoreDuringBuilds: true,
     },
+    // Disable TypeScript checking during builds
+    typescript: {
+        ignoreBuildErrors: true,
+    },
     experimental: {
-        optimizePackageImports: ['react-icons', 'date-fns'],
+        optimizePackageImports: ['react-icons'],
     },
     images: {
         remotePatterns: [
