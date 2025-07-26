@@ -36,7 +36,8 @@ export default function RegisterPage() {
             // Get the callbackUrl from the URL if it exists
             const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
-            router.push(callbackUrl);
+            // Use replace to avoid back button issues
+            router.replace(callbackUrl);
         }
     }, [status, router, searchParams]);
 
@@ -101,17 +102,24 @@ export default function RegisterPage() {
                 redirect: false,
                 email: formData.email,
                 password: formData.password,
-                callbackUrl,
             });
 
+            setDebugInfo(prev => `${prev}\nSign in result: ${JSON.stringify(signInResult)}`);
+
             if (signInResult?.error) {
-                setError('Registration successful, but failed to sign in automatically');
+                setError(`Registration successful, but failed to sign in automatically: ${signInResult.error}. Please try logging in.`);
                 setIsLoading(false);
                 return;
             }
 
-            // Force a refresh to update the session
-            window.location.href = callbackUrl;
+            if (signInResult?.ok) {
+                // Successful sign in, redirect to callback URL
+                setDebugInfo(prev => `${prev}\nRedirecting to: ${callbackUrl}`);
+                router.replace(callbackUrl);
+            } else {
+                setError('Registration successful, but failed to sign in automatically. Please try logging in.');
+                setIsLoading(false);
+            }
         } catch (error) {
             setError('An unexpected error occurred');
             console.error('Registration error:', error);

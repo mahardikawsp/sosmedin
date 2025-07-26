@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { validatePostContent } from '@/lib/content-moderation';
+import { moderationService } from '@/lib/moderation-service';
 
 /**
  * POST /api/posts
@@ -17,14 +17,27 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { content, parentId } = body;
 
-        // Validate and moderate content
-        const moderationResult = validatePostContent(content);
-        if (!moderationResult.isValid) {
+        // Validate and moderate content with automated system
+        const moderationResult = await moderationService.moderateBeforePublish(
+            content,
+            parentId ? 'reply' : 'post',
+            currentUserId
+        );
+
+        // If content is not allowed, return error
+        if (!moderationResult.allowed) {
             return NextResponse.json(
-                { error: moderationResult.errors[0] },
-                { status: 400 }
+                {
+                    error: 'Content blocked by moderation system',
+                    reason: moderationResult.moderationResult.flagReason,
+                    queueId: moderationResult.queueId
+                },
+                { status: 403 }
             );
         }
+
+        // Use filtered content if available
+        const finalContent = moderationResult.filteredContent || content;
 
         // If parentId is provided, validate that the parent post exists
         if (parentId) {
@@ -40,10 +53,10 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Create the post with filtered content
+        // Create the post with moderated content
         const post = await prisma.post.create({
             data: {
-                content: moderationResult.filteredContent?.trim() || content.trim(),
+                content: finalContent.trim(),
                 userId: currentUserId,
                 parentId: parentId || null,
             },

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { validatePostContent } from '@/lib/content-moderation';
 import { generateReplyNotification } from '@/lib/notification-service';
+import { moderationService } from '@/lib/moderation-service';
 
 /**
  * POST /api/posts/[id]/reply
@@ -22,14 +22,27 @@ export async function POST(
         const body = await request.json();
         const { content } = body;
 
-        // Validate and moderate content
-        const moderationResult = validatePostContent(content);
-        if (!moderationResult.isValid) {
+        // Validate and moderate content with automated system
+        const moderationResult = await moderationService.moderateBeforePublish(
+            content,
+            'reply',
+            currentUserId
+        );
+
+        // If content is not allowed, return error
+        if (!moderationResult.allowed) {
             return NextResponse.json(
-                { error: moderationResult.errors[0] },
-                { status: 400 }
+                {
+                    error: 'Content blocked by moderation system',
+                    reason: moderationResult.moderationResult.flagReason,
+                    queueId: moderationResult.queueId
+                },
+                { status: 403 }
             );
         }
+
+        // Use filtered content if available
+        const finalContent = moderationResult.filteredContent || content;
 
         // Validate that the parent post exists
         const parentPost = await prisma.post.findUnique({
@@ -56,7 +69,7 @@ export async function POST(
         // Create the reply
         const reply = await prisma.post.create({
             data: {
-                content: moderationResult.filteredContent?.trim() || content.trim(),
+                content: finalContent.trim(),
                 userId: currentUserId,
                 parentId: parentId,
             },

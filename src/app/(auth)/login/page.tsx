@@ -30,7 +30,9 @@ export default function LoginPage() {
         if (status === 'authenticated') {
             // Get the callbackUrl from the URL if it exists
             const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-            router.push(callbackUrl);
+
+            // Use replace to avoid back button issues
+            router.replace(callbackUrl);
         }
     }, [status, router, searchParams]);
 
@@ -59,8 +61,13 @@ export default function LoginPage() {
                 return;
             }
 
-            // Force a refresh to update the session
-            window.location.href = callbackUrl;
+            if (result?.ok) {
+                // Successful sign in, redirect to callback URL
+                router.replace(callbackUrl);
+            } else {
+                setError('Sign in failed. Please try again.');
+                setIsLoading(false);
+            }
         } catch (error) {
             setError('An unexpected error occurred');
             console.error('Login error:', error);

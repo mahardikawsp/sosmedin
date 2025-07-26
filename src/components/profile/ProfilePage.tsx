@@ -6,6 +6,7 @@ import { useSession } from '@/hooks/use-session';
 import ProfileImageUpload from './ProfileImageUpload';
 import UserPosts from './UserPosts';
 import FollowButton from '@/components/interactions/FollowButton';
+import { ReportButton } from '@/components/moderation/ReportButton';
 
 interface ProfilePageProps {
     username: string;
@@ -166,11 +167,21 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                                 {isEditing ? 'Cancel' : 'Edit Profile'}
                             </button>
                         ) : (
-                            <FollowButton
-                                username={username}
-                                initialFollowing={profile.isFollowing || false}
-                                onFollowChange={handleFollowChange}
-                            />
+                            <>
+                                <FollowButton
+                                    username={username}
+                                    initialFollowing={profile.isFollowing || false}
+                                    onFollowChange={handleFollowChange}
+                                />
+                                {isAuthenticated && (
+                                    <ReportButton
+                                        type="user"
+                                        targetId={profile.id}
+                                        targetUsername={profile.username}
+                                        className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                    />
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

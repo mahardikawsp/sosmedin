@@ -28,38 +28,33 @@ const publicPaths = [
     '/api/auth/callback'
 ];
 
-// Paths that should redirect authenticated users to dashboard
-const authRedirectPaths = [
-    '/login',
-    '/register'
-];
+
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
-
-    // Get the token from the request
-    const token = await getToken({
-        req: request,
-        secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    const isAuthenticated = !!token;
 
     // Check if the path is protected
     const isProtectedPath = protectedPaths.some(path =>
         pathname === path || pathname.startsWith(`${path}/`)
     );
 
-    // Check if the path should redirect authenticated users
-    const isAuthRedirectPath = authRedirectPaths.some(path =>
+    // Check if the path is public
+    const isPublicPath = publicPaths.some(path =>
         pathname === path || pathname.startsWith(`${path}/`)
     );
 
-    // If user is authenticated and trying to access login/register pages,
-    // redirect them to the dashboard
-    if (isAuthenticated && isAuthRedirectPath) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+    // If it's a public path, allow access
+    if (isPublicPath) {
+        return NextResponse.next();
     }
+
+    // For protected paths, check for JWT token
+    const token = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+    });
+
+    const isAuthenticated = !!token;
 
     // If the path is protected and user is not authenticated, redirect to login
     if (isProtectedPath && !isAuthenticated) {
@@ -69,20 +64,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
-    // Add user info to headers for server components
-    const response = NextResponse.next();
-
-    if (isAuthenticated && token.sub) {
-        // Add user ID to headers for server components
-        response.headers.set('x-user-id', token.sub as string);
-
-        // Add username if available
-        if (token.username) {
-            response.headers.set('x-username', token.username as string);
-        }
-    }
-
-    return response;
+    return NextResponse.next();
 }
 
 // Configure the middleware to run on all paths except static files and api routes that don't need auth

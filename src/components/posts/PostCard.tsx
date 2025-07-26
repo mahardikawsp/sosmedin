@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import PostEditForm from './PostEditForm';
 import LikeButton from '@/components/interactions/LikeButton';
+import { ReportButton } from '@/components/moderation/ReportButton';
 
 interface PostCardProps {
     post: {
@@ -249,6 +250,16 @@ export default function PostCard({
                                     {isDeleting ? 'Deleting...' : 'Delete'}
                                 </button>
                             </>
+                        )}
+
+                        {/* Report button for non-owners */}
+                        {!isOwner && session?.user && (
+                            <ReportButton
+                                type="post"
+                                targetId={localPost.id}
+                                targetContent={localPost.content}
+                                className="hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded p-1"
+                            />
                         )}
                     </div>
                 </div>

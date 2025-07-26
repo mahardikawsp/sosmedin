@@ -37,6 +37,8 @@ model User {
   followedBy     Follow[]  @relation("Follower")
   following      Follow[]  @relation("Following")
   notifications  Notification[] // Notifications received by user
+  reportsCreated Report[]  @relation("ReportedBy") // Reports created by this user
+  reportsReceived Report[] @relation("ReportedUser") // Reports against this user
 }
 
 // Account model for OAuth providers
@@ -99,6 +101,7 @@ model Post {
   
   // Other relations
   likes     Like[]
+  reports   Report[] // Reports against this post
 
   @@index([userId])
   @@index([parentId])
@@ -151,5 +154,32 @@ model Notification {
   userId      String
 
   @@index([userId])
+  @@index([type])
+}
+
+// Report model for content moderation
+model Report {
+  id          String   @id @default(cuid())
+  type        String   // "post", "user"
+  reason      String   // "spam", "harassment", "inappropriate", "other"
+  description String?  @db.Text
+  status      String   @default("pending") // "pending", "reviewed", "resolved", "dismissed"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  reporter    User     @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporterId  String
+  
+  // Reported content (either post or user)
+  reportedPost Post?   @relation(fields: [reportedPostId], references: [id], onDelete: Cascade)
+  reportedPostId String?
+  reportedUser User?   @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reportedUserId String?
+
+  @@index([reporterId])
+  @@index([reportedPostId])
+  @@index([reportedUserId])
+  @@index([status])
   @@index([type])
 }
