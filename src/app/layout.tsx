@@ -4,6 +4,8 @@ import './globals.css';
 import { SessionProvider } from '@/components/providers/session-provider';
 import { ThemeProvider } from '@/contexts/theme-context';
 import ClientLayout from '@/components/layout/client-layout';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { ToastProvider } from '@/components/ui/toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,13 +25,21 @@ export default function RootLayout({
                 <meta name="theme-color" content="#ffffff" />
             </head>
             <body className={`${inter.className} h-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-theme`}>
-                <ThemeProvider>
-                    <SessionProvider>
-                        <ClientLayout>
-                            {children}
-                        </ClientLayout>
-                    </SessionProvider>
-                </ThemeProvider>
+                <ErrorBoundary>
+                    <ThemeProvider>
+                        <SessionProvider>
+                            <ToastProvider>
+                                <ErrorBoundary>
+                                    <ClientLayout>
+                                        <ErrorBoundary>
+                                            {children}
+                                        </ErrorBoundary>
+                                    </ClientLayout>
+                                </ErrorBoundary>
+                            </ToastProvider>
+                        </SessionProvider>
+                    </ThemeProvider>
+                </ErrorBoundary>
             </body>
         </html>
     );

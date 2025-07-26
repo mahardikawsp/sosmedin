@@ -95,3 +95,96 @@ body {
 ::-webkit-scrollbar-thumb:hover {
 	background: rgb(var(--text-tertiary));
 }
+
+/* Animation utilities */
+@keyframes slideInUp {
+	from {
+		transform: translateY(100%);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes slideInDown {
+	from {
+		transform: translateY(-100%);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes scaleIn {
+	from {
+		transform: scale(0.9);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+@keyframes fadeInUp {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.animate-slide-in-up {
+	animation: slideInUp 0.3s ease-out;
+}
+
+.animate-slide-in-down {
+	animation: slideInDown 0.3s ease-out;
+}
+
+.animate-scale-in {
+	animation: scaleIn 0.2s ease-out;
+}
+
+.animate-fade-in-up {
+	animation: fadeInUp 0.4s ease-out;
+}
+
+/* Hover effects */
+.hover-lift {
+	transition:
+		transform 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Focus styles */
+.focus-ring {
+	@apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
+}
+
+/* Loading pulse animation */
+@keyframes pulse-subtle {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.7;
+	}
+}
+
+.animate-pulse-subtle {
+	animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import ButtonWithLoading from '@/components/ui/button-with-loading';
+import { handleAPIResponse, getErrorMessage, isNetworkError } from '@/lib/error-utils';
+import ErrorMessage from '@/components/ui/error-message';
 
 interface PostFormProps {
     onPostCreated?: (post: any) => void;
@@ -49,16 +52,11 @@ export default function PostForm({
                 }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to create post');
-            }
-
-            const newPost = await response.json();
+            const newPost = await handleAPIResponse(response);
             setContent('');
             onPostCreated?.(newPost);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to create post');
+            setError(getErrorMessage(err));
         } finally {
             setIsSubmitting(false);
         }
@@ -73,18 +71,18 @@ export default function PostForm({
     }
 
     return (
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex gap-3">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+            <div className="flex gap-2 sm:gap-3">
                 <div className="flex-shrink-0">
                     {session.user?.image ? (
                         <img
                             src={session.user.image}
                             alt={session.user.name || 'User'}
-                            className="w-10 h-10 rounded-full"
+                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full"
                         />
                     ) : (
-                        <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                            <span className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                            <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400">
                                 {session.user?.name?.charAt(0).toUpperCase() || 'U'}
                             </span>
                         </div>
@@ -96,31 +94,44 @@ export default function PostForm({
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         placeholder={placeholder}
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        className="w-full p-2 sm:p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm sm:text-base"
                         rows={3}
                         maxLength={500}
                         disabled={isSubmitting}
                     />
 
-                    <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center justify-between mt-2 sm:mt-3">
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                             <span className={content.length > 450 ? 'text-red-500' : ''}>
                                 {content.length}/500
                             </span>
                         </div>
 
-                        <button
+                        <ButtonWithLoading
                             type="submit"
-                            disabled={isSubmitting || !content.trim() || content.length > 500}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            loading={isSubmitting}
+                            loadingText="Posting..."
+                            disabled={!content.trim() || content.length > 500}
+                            variant="primary"
+                            size="md"
+                            className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base"
                         >
-                            {isSubmitting ? 'Posting...' : buttonText}
-                        </button>
+                            {buttonText}
+                        </ButtonWithLoading>
                     </div>
 
                     {error && (
-                        <div className="mt-2 text-sm text-red-600 dark:text-red-400">
-                            {error}
+                        <div className="mt-2">
+                            <ErrorMessage
+                                title=""
+                                message={error}
+                                variant="error"
+                                className="text-xs sm:text-sm"
+                                action={isNetworkError(error) ? {
+                                    label: 'Retry',
+                                    onClick: handleSubmit
+                                } : undefined}
+                            />
                         </div>
                     )}
                 </div>

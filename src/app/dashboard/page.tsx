@@ -39,27 +39,27 @@ export default function Dashboard() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
                 {/* Welcome Header */}
-                <div className="mb-8">
+                <div className="mb-6 sm:mb-8">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
                                 Welcome, {session?.user?.name || 'User'}!
                             </h1>
-                            <p className="mt-1 text-gray-600 dark:text-gray-400">
+                            <p className="mt-1 text-sm sm:text-base text-gray-600 dark:text-gray-400">
                                 Stay connected with your network
                             </p>
                         </div>
-                        <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+                        <div className="mt-3 sm:mt-0 flex items-center space-x-3">
                             <button
                                 onClick={handleRefresh}
                                 disabled={refreshing}
-                                className={`inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${refreshing ? 'opacity-50 cursor-not-allowed' : ''
+                                className={`inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs sm:text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${refreshing ? 'opacity-50 cursor-not-allowed' : ''
                                     }`}
                             >
                                 <svg
-                                    className={`-ml-0.5 mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+                                    className={`-ml-0.5 mr-2 h-3 w-3 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`}
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -79,33 +79,33 @@ export default function Dashboard() {
                 </div>
 
                 {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
                     {/* Main Feed - Takes up most space on larger screens */}
                     <div className="lg:col-span-3">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                                             Your Feed
                                         </h2>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                                             Posts from people you follow
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="p-4 sm:p-6">
+                            <div className="p-3 sm:p-4 lg:p-6">
                                 <Feed type="personalized" showPostForm={true} showHeader={false} />
                             </div>
                         </div>
                     </div>
 
-                    {/* Sidebar */}
-                    <div className="lg:col-span-1 space-y-6">
+                    {/* Sidebar - Hidden on mobile */}
+                    <div className="hidden lg:block lg:col-span-1 space-y-4 lg:space-y-6">
                         {/* Profile Card */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
+                            <h3 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 Profile
                             </h3>
                             <div className="flex items-center space-x-3">
@@ -114,11 +114,11 @@ export default function Dashboard() {
                                         <img
                                             src={session.user.image}
                                             alt={session.user.name || 'User'}
-                                            className="h-12 w-12 rounded-full object-cover"
+                                            className="h-10 w-10 lg:h-12 lg:w-12 rounded-full object-cover"
                                         />
                                     ) : (
-                                        <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                                            <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                                        <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                                            <span className="text-lg lg:text-xl font-bold text-blue-600 dark:text-blue-400">
                                                 {session?.user?.name?.[0] || 'U'}
                                             </span>
                                         </div>
@@ -128,7 +128,7 @@ export default function Dashboard() {
                                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                         {session?.user?.name}
                                     </p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                    <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 truncate">
                                         @{(session?.user as any)?.username || 'username'}
                                     </p>
                                 </div>
@@ -136,7 +136,7 @@ export default function Dashboard() {
                             <div className="mt-4">
                                 <Link
                                     href={`/profile/${(session?.user as any)?.username || ''}`}
-                                    className="w-full inline-flex justify-center items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                    className="w-full inline-flex justify-center items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs lg:text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                                 >
                                     View Profile
                                 </Link>

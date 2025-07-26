@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { PostForm, PostList } from '@/components/posts';
+import ResponsiveContainer from '@/components/layout/responsive-container';
 
 interface FeedProps {
     type?: 'personalized' | 'explore' | 'trending';
@@ -54,13 +55,13 @@ export default function Feed({ type = 'personalized', showPostForm = true, showH
     };
 
     return (
-        <div className={showHeader ? "max-w-2xl mx-auto py-6 px-4" : ""}>
+        <ResponsiveContainer maxWidth="lg" padding="md" className={showHeader ? "py-4 sm:py-6" : ""}>
             {/* Feed Header */}
             {showHeader && (
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                                 {getFeedTitle()}
                             </h1>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -101,19 +102,19 @@ export default function Feed({ type = 'personalized', showPostForm = true, showH
 
             {/* Post Form */}
             {showPostForm && type === 'personalized' && (
-                <div className={showHeader ? "mt-6" : "mb-6"}>
+                <div className={showHeader ? "mt-4 sm:mt-6" : "mb-4 sm:mb-6"}>
                     <PostForm onPostCreated={handlePostCreated} />
                 </div>
             )}
 
             {/* Feed Content */}
-            <div className={showHeader ? "mt-6" : ""}>
+            <div className={showHeader ? "mt-4 sm:mt-6" : ""}>
                 <PostList
                     ref={postListRef}
                     type={type}
                     enableInfiniteScroll={true}
                 />
             </div>
-        </div>
+        </ResponsiveContainer>
     );
 }

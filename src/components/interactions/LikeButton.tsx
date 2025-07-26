@@ -69,15 +69,15 @@ export default function LikeButton({
             type="button"
             onClick={handleLike}
             disabled={!isAuthenticated || isLoading}
-            className={`flex items-center gap-1 ${textSizeClasses[size]} transition-colors ${isLiked
+            className={`flex items-center gap-1 ${textSizeClasses[size]} transition-all duration-200 ${isLiked
                 ? 'text-red-500 hover:text-red-600'
                 : 'text-gray-500 dark:text-gray-400 hover:text-red-500'
-                } ${!isAuthenticated ? 'cursor-not-allowed opacity-50' : 'hover:bg-red-50 dark:hover:bg-red-900/20'
-                } ${isLoading ? 'opacity-50' : ''} rounded-full p-1`}
+                } ${!isAuthenticated ? 'cursor-not-allowed opacity-50' : 'hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-105'
+                } ${isLoading ? 'opacity-50' : ''} rounded-full p-1 active:scale-95`}
             title={isAuthenticated ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
         >
             <svg
-                className={sizeClasses[size]}
+                className={`${sizeClasses[size]} transition-all duration-200 ${isLiked ? 'animate-pulse' : ''}`}
                 fill={isLiked ? 'currentColor' : 'none'}
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -89,7 +89,11 @@ export default function LikeButton({
                     d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                 />
             </svg>
-            {showCount && <span>{likeCount}</span>}
+            {showCount && (
+                <span className={`transition-all duration-200 ${isLiked ? 'font-semibold' : ''}`}>
+                    {likeCount}
+                </span>
+            )}
         </button>
     );
 }

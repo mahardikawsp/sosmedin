@@ -16,9 +16,10 @@ interface Notification {
 interface NotificationCenterProps {
     isOpen: boolean;
     onClose: () => void;
+    isMobile?: boolean;
 }
 
-export default function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
+export default function NotificationCenter({ isOpen, onClose, isMobile = false }: NotificationCenterProps) {
     const { data: session, isAuthenticated } = useSession();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -182,6 +183,99 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
     };
 
     if (!isOpen || !isAuthenticated) return null;
+
+    if (isMobile) {
+        return (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 sm:hidden">
+                <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-lg max-h-[80vh] flex flex-col">
+                    {/* Mobile Header */}
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                            Notifications
+                        </h3>
+                        <div className="flex items-center space-x-2">
+                            {notifications.some(n => !n.isRead) && (
+                                <button
+                                    onClick={markAllAsRead}
+                                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                                >
+                                    Mark all read
+                                </button>
+                            )}
+                            <button
+                                onClick={onClose}
+                                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Mobile Notifications list */}
+                    <div className="flex-1 overflow-y-auto">
+                        {isLoading && notifications.length === 0 ? (
+                            <div className="px-4 py-8 text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading notifications...</p>
+                            </div>
+                        ) : notifications.length === 0 ? (
+                            <div className="px-4 py-8 text-center">
+                                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
+                            </div>
+                        ) : (
+                            <>
+                                {notifications.map((notification) => (
+                                    <div
+                                        key={notification.id}
+                                        className={`px-4 py-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 ${!notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                            }`}
+                                        onClick={() => !notification.isRead && markAsRead(notification.id)}
+                                    >
+                                        <div className="flex items-start space-x-3">
+                                            <div className="flex-shrink-0">
+                                                {getNotificationIcon(notification.type)}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-gray-900 dark:text-white">
+                                                    Someone {getNotificationMessage(notification)}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                                </p>
+                                            </div>
+                                            {!notification.isRead && (
+                                                <div className="flex-shrink-0">
+                                                    <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Load more button */}
+                                {hasMore && (
+                                    <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+                                        <button
+                                            onClick={loadMore}
+                                            disabled={isLoading}
+                                            className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50"
+                                        >
+                                            {isLoading ? 'Loading...' : 'Load more'}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div

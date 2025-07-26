@@ -2,6 +2,10 @@
 
 import { useState, useEffect, forwardRef, useImperativeHandle, useCallback, useRef } from 'react';
 import PostCard from './PostCard';
+import { FeedSkeleton } from '@/components/ui/loading-skeleton';
+import FadeIn from '@/components/ui/fade-in';
+import { handleAPIResponse, getErrorMessage, isNetworkError } from '@/lib/error-utils';
+import { NetworkError } from '@/components/ui/error-message';
 
 interface Post {
     id: string;
@@ -80,12 +84,7 @@ const PostList = forwardRef<PostListRef, PostListProps>(function PostList({
             const fullUrl = queryString ? `${url}?${queryString}` : url;
 
             const response = await fetch(fullUrl);
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch posts');
-            }
-
-            const data = await response.json();
+            const data = await handleAPIResponse(response);
 
             if (type === 'user') {
                 // User posts API has different structure
@@ -106,7 +105,7 @@ const PostList = forwardRef<PostListRef, PostListProps>(function PostList({
                 setNextCursor(data.nextCursor);
             }
         } catch (err) {
-            setError('Failed to load posts');
+            setError(getErrorMessage(err));
             console.error('Error fetching posts:', err);
         } finally {
             setLoading(false);
@@ -195,17 +194,18 @@ const PostList = forwardRef<PostListRef, PostListProps>(function PostList({
     }), [handlePostCreated, refresh]);
 
     if (loading && posts.length === 0) {
-        return (
-            <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-        );
+        return <FeedSkeleton count={5} />;
     }
 
     if (error && posts.length === 0) {
+        if (isNetworkError(error)) {
+            return <NetworkError onRetry={() => fetchPosts()} />;
+        }
+
         return (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                <p>{error}</p>
+            <div className="bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 px-4 py-3 rounded-lg">
+                <p className="font-medium">Unable to load posts</p>
+                <p className="text-sm mt-1">{error}</p>
                 <button
                     type="button"
                     onClick={() => fetchPosts()}
@@ -236,13 +236,14 @@ const PostList = forwardRef<PostListRef, PostListProps>(function PostList({
             )}
 
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {posts.map(post => (
-                    <PostCard
-                        key={post.id}
-                        post={post}
-                        onPostUpdated={handlePostUpdated}
-                        onPostDeleted={handlePostDeleted}
-                    />
+                {posts.map((post, index) => (
+                    <FadeIn key={post.id} delay={index * 50}>
+                        <PostCard
+                            post={post}
+                            onPostUpdated={handlePostUpdated}
+                            onPostDeleted={handlePostDeleted}
+                        />
+                    </FadeIn>
                 ))}
             </div>
 
@@ -279,15 +280,22 @@ const PostList = forwardRef<PostListRef, PostListProps>(function PostList({
             )}
 
             {error && posts.length > 0 && (
-                <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                    <p>{error}</p>
-                    <button
-                        type="button"
-                        onClick={refresh}
-                        className="mt-2 text-sm underline hover:no-underline"
-                    >
-                        Try again
-                    </button>
+                <div className="mt-4">
+                    {isNetworkError(error) ? (
+                        <NetworkError onRetry={refresh} />
+                    ) : (
+                        <div className="bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 px-4 py-3 rounded-lg">
+                            <p className="font-medium">Error loading more posts</p>
+                            <p className="text-sm mt-1">{error}</p>
+                            <button
+                                type="button"
+                                onClick={refresh}
+                                className="mt-2 text-sm underline hover:no-underline"
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

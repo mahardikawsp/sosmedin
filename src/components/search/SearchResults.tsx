@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { PostCard } from '@/components/posts';
 import Link from 'next/link';
+import { SearchSkeleton } from '@/components/ui/loading-skeleton';
+import FadeIn from '@/components/ui/fade-in';
 
 interface User {
     id: string;
@@ -136,8 +138,8 @@ export default function SearchResults({
                     type="button"
                     onClick={() => handleFollow(user.id, isFollowing)}
                     className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${isFollowing
-                            ? 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500'
-                            : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+                        ? 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
                         }`}
                 >
                     {isFollowing ? 'Following' : 'Follow'}
@@ -173,8 +175,8 @@ export default function SearchResults({
                             type="button"
                             onClick={() => onTypeChange(tab.key as 'all' | 'users' | 'posts')}
                             className={`py-2 px-1 border-b-2 font-medium text-sm ${type === tab.key
-                                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                                 }`}
                         >
                             {tab.label}
@@ -190,10 +192,7 @@ export default function SearchResults({
 
             {/* Loading State */}
             {loading && (users?.length === 0 && posts?.length === 0) && (
-                <div className="flex justify-center items-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                    <span className="ml-2 text-gray-600 dark:text-gray-400">Searching...</span>
-                </div>
+                <SearchSkeleton />
             )}
 
             {/* Results */}
@@ -214,8 +213,10 @@ export default function SearchResults({
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Users</h3>
                     )}
                     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        {users.map(user => (
-                            <UserCard key={user.id} user={user} />
+                        {users.map((user, index) => (
+                            <FadeIn key={user.id} delay={index * 50}>
+                                <UserCard user={user} />
+                            </FadeIn>
                         ))}
                     </div>
                 </div>
@@ -228,8 +229,10 @@ export default function SearchResults({
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Posts</h3>
                     )}
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {posts.map(post => (
-                            <PostCard key={post.id} post={post} />
+                        {posts.map((post, index) => (
+                            <FadeIn key={post.id} delay={index * 50}>
+                                <PostCard post={post} />
+                            </FadeIn>
                         ))}
                     </div>
                 </div>
@@ -243,8 +246,8 @@ export default function SearchResults({
                         onClick={onLoadMore}
                         disabled={loading}
                         className={`px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${loading
-                                ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                                : 'text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600'
+                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                            : 'text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600'
                             }`}
                     >
                         {loading ? 'Loading...' : 'Load More'}

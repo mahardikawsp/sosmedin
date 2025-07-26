@@ -149,9 +149,9 @@ export default function SearchPage() {
     }, [searchParams, performSearch]);
 
     return (
-        <div className="max-w-2xl mx-auto py-6 px-4">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+        <div className="max-w-2xl mx-auto py-4 sm:py-6 px-4">
+            <div className="mb-4 sm:mb-6">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
                     Search
                 </h1>
 
