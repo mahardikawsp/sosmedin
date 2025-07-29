@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { SessionProvider } from '@/components/providers/session-provider';
 import { ThemeProvider } from '@/contexts/theme-context';
@@ -7,7 +6,8 @@ import ClientLayout from '@/components/layout/client-layout';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { ToastProvider } from '@/components/ui/toast';
 
-const inter = Inter({ subsets: ['latin'] });
+// Use system fonts as fallback when Google Fonts is unavailable
+const fontClassName = 'font-sans';
 
 export const metadata: Metadata = {
     title: 'Sosmedin',
@@ -25,7 +25,7 @@ export default function RootLayout({
                 <meta name="theme-color" content="#ffffff" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
             </head>
-            <body className={`${inter.className} h-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-theme`}>
+            <body className={`${fontClassName} h-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-theme`}>
                 <a
                     href="#main-content"
                     className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-md z-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"

@@ -8,6 +8,21 @@ export default {
     darkMode: 'class',
     theme: {
         extend: {
+            fontFamily: {
+                sans: [
+                    'system-ui',
+                    '-apple-system',
+                    'BlinkMacSystemFont',
+                    '"Segoe UI"',
+                    'Roboto',
+                    '"Helvetica Neue"',
+                    'Arial',
+                    'sans-serif',
+                    '"Apple Color Emoji"',
+                    '"Segoe UI Emoji"',
+                    '"Segoe UI Symbol"',
+                ],
+            },
             colors: {
                 primary: {
                     50: '#f0f9ff',
