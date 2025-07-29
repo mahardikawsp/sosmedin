@@ -153,6 +153,12 @@ export const authOptions: NextAuthOptions = {
     },
     debug: process.env.NODE_ENV === "development",
     secret: process.env.NEXTAUTH_SECRET || "default-secret-change-in-production",
+    // Ensure proper URL configuration for production
+    ...(process.env.NEXTAUTH_URL && { url: process.env.NEXTAUTH_URL }),
+    // Fallback URL detection for Vercel
+    ...(!process.env.NEXTAUTH_URL && process.env.VERCEL_URL && {
+        url: `https://${process.env.VERCEL_URL}`
+    }),
     // Allow linking accounts with the same email address
     // allowDangerousEmailAccountLinking: true, // This option may not be available in this version
 };

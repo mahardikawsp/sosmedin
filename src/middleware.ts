@@ -58,10 +58,11 @@ export async function middleware(request: NextRequest) {
 
     // If the path is protected and user is not authenticated, redirect to login
     if (isProtectedPath && !isAuthenticated) {
-        const url = new URL('/login', request.url);
+        // Use the request's origin to ensure we redirect to the correct domain
+        const loginUrl = new URL('/login', request.nextUrl.origin);
         // Store the original URL as a callback URL to redirect after login
-        url.searchParams.set('callbackUrl', request.url);
-        return NextResponse.redirect(url);
+        loginUrl.searchParams.set('callbackUrl', request.nextUrl.href);
+        return NextResponse.redirect(loginUrl);
     }
 
     return NextResponse.next();

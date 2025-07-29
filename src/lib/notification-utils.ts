@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import { Notification } from '../generated/prisma';
+import { Notification } from '@prisma/client';
 
 /**
  * Notification utility functions

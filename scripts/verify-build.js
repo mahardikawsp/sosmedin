@@ -19,6 +19,18 @@ const checks = [
         required: true
     },
     {
+        name: 'Prisma client',
+        path: 'node_modules/.prisma/client',
+        type: 'directory',
+        required: true
+    },
+    {
+        name: 'Prisma client index',
+        path: 'node_modules/.prisma/client/index.js',
+        type: 'file',
+        required: true
+    },
+    {
         name: 'Standalone server',
         path: '.next/standalone/server.js',
         type: 'file',

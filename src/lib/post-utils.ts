@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import { Post, User } from '../generated/prisma';
+import { Post, User } from '@prisma/client';
 
 // Constants
 const MAX_POST_LENGTH = 500;

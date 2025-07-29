@@ -1,22 +1,33 @@
 import { PrismaClient } from '@prisma/client';
 
-
 // PrismaClient is attached to the `global` object in development to prevent
 // exhausting your database connection limit.
 // Learn more: https://pris.ly/d/help/next-js-best-practices
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-export const prisma =
-    globalForPrisma.prisma ||
-    new PrismaClient({
-        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-        datasources: {
-            db: {
-                url: process.env.DATABASE_URL,
+// Enhanced Prisma client initialization with error handling
+function createPrismaClient(): PrismaClient {
+    try {
+        if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set');
+        }
+
+        return new PrismaClient({
+            log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+            datasources: {
+                db: {
+                    url: process.env.DATABASE_URL,
+                },
             },
-        },
-    });
+        });
+    } catch (error) {
+        console.error('Failed to initialize Prisma client:', error);
+        throw new Error(`Database initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+export const prisma = globalForPrisma.prisma || createPrismaClient();
 
 // Connection pool optimization for production
 if (process.env.NODE_ENV === 'production') {

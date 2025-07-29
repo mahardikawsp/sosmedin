@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import { Like } from '../generated/prisma';
+import { Like } from '@prisma/client';
 
 /**
  * Like utility functions

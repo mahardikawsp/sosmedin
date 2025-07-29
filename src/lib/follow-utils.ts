@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import { Follow } from '../generated/prisma';
+import { Follow } from '@prisma/client';
 
 /**
  * Follow utility functions
