@@ -17,9 +17,9 @@ export async function ProtectedRoute({
   const session = await getSession();
 
   if (!session?.user) {
-    const callbackUrl = typeof window !== 'undefined' ? window.location.href : '';
-    const redirectPath = `${redirectTo}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-    redirect(redirectPath);
+    // For server components, we can't access window.location
+    // The middleware should handle the callback URL properly
+    redirect(redirectTo);
   }
 
   return <>{children}</>;

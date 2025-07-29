@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from './auth';
 import { Session } from 'next-auth';
+import { createCallbackUrl } from './url-utils';
 
 /**
  * Gets the current session on the server side
@@ -10,6 +11,7 @@ import { Session } from 'next-auth';
 export async function getSession() {
     return await getServerSession(authOptions);
 }
+
 
 /**
  * Validates that a user is authenticated on the server side
@@ -21,7 +23,8 @@ export async function validateSession(redirectTo?: string): Promise<Session> {
     const session = await getSession();
 
     if (!session?.user) {
-        const redirectPath = redirectTo ? `/login?callbackUrl=${encodeURIComponent(redirectTo)}` : '/login';
+        const callbackUrl = createCallbackUrl(redirectTo || '/dashboard');
+        const redirectPath = `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`;
         redirect(redirectPath);
     }
 

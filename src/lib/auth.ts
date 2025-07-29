@@ -4,6 +4,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "./prisma";
 import { comparePassword } from "./auth-utils";
 import { CustomPrismaAdapter } from "./custom-prisma-adapter";
+import { getBaseUrl } from "./url-utils";
+
+
 
 export const authOptions: NextAuthOptions = {
     adapter: CustomPrismaAdapter(prisma),
@@ -68,6 +71,23 @@ export const authOptions: NextAuthOptions = {
                 (session.user as any).username = token.username as string;
             }
             return session;
+        },
+        async redirect({ url, baseUrl }) {
+            // Get the correct base URL
+            const correctBaseUrl = getBaseUrl() || baseUrl;
+
+            // If url is relative, make it absolute with correct domain
+            if (url.startsWith('/')) {
+                return `${correctBaseUrl}${url}`;
+            }
+
+            // If url is absolute and matches our domain, allow it
+            if (url.startsWith(correctBaseUrl)) {
+                return url;
+            }
+
+            // For external URLs, redirect to dashboard
+            return `${correctBaseUrl}/dashboard`;
         },
         async signIn({ user, account, profile }) {
             // Allow OAuth providers to link with existing accounts
@@ -153,12 +173,8 @@ export const authOptions: NextAuthOptions = {
     },
     debug: process.env.NODE_ENV === "development",
     secret: process.env.NEXTAUTH_SECRET || "default-secret-change-in-production",
-    // Ensure proper URL configuration for production
-    ...(process.env.NEXTAUTH_URL && { url: process.env.NEXTAUTH_URL }),
-    // Fallback URL detection for Vercel
-    ...(!process.env.NEXTAUTH_URL && process.env.VERCEL_URL && {
-        url: `https://${process.env.VERCEL_URL}`
-    }),
+    // Ensure proper URL configuration
+    ...(getBaseUrl() && { url: getBaseUrl() }),
     // Allow linking accounts with the same email address
     // allowDangerousEmailAccountLinking: true, // This option may not be available in this version
 };

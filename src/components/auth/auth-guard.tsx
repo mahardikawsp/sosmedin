@@ -3,6 +3,7 @@
 import { useSession } from '@/hooks/use-session';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createCallbackUrl } from '@/lib/url-utils';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -25,7 +26,8 @@ export function AuthGuard({
   useEffect(() => {
     // If not loading and not authenticated, redirect to login
     if (!isLoading && !isAuthenticated) {
-      router.push(`${redirectTo}?callbackUrl=${encodeURIComponent(window.location.href)}`);
+      const callbackUrl = createCallbackUrl(window.location.pathname);
+      router.push(`${redirectTo}?callbackUrl=${encodeURIComponent(callbackUrl)}`);
     }
   }, [isAuthenticated, isLoading, redirectTo, router]);
 
