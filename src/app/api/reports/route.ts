@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
                     error: {
                         code: 'VALIDATION_ERROR',
                         message: 'Invalid request data',
-                        details: error.errors
+                        details: error.issues
                     }
                 },
                 { status: 400 }
@@ -171,17 +171,31 @@ export async function GET(request: NextRequest) {
         const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
         const status = searchParams.get('status') || undefined;
         const type = searchParams.get('type') || undefined;
+        const forModeration = searchParams.get('moderation') === 'true';
 
         const skip = (page - 1) * limit;
 
-        // Get reports created by the current user
+        // For moderation dashboard, show all reports
+        // For regular users, show only their reports
+        const whereClause = forModeration ? {
+            ...(status && { status }),
+            ...(type && { type }),
+        } : {
+            reporterId: session.user.id,
+            ...(status && { status }),
+            ...(type && { type }),
+        };
+
         const reports = await prisma.report.findMany({
-            where: {
-                reporterId: session.user.id,
-                ...(status && { status }),
-                ...(type && { type }),
-            },
+            where: whereClause,
             include: {
+                reporter: {
+                    select: {
+                        id: true,
+                        username: true,
+                        displayName: true,
+                    }
+                },
                 reportedPost: {
                     select: {
                         id: true,
@@ -211,11 +225,7 @@ export async function GET(request: NextRequest) {
         });
 
         const totalReports = await prisma.report.count({
-            where: {
-                reporterId: session.user.id,
-                ...(status && { status }),
-                ...(type && { type }),
-            }
+            where: whereClause
         });
 
         return NextResponse.json({

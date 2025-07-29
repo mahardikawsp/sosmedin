@@ -10,8 +10,12 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    // Disable source maps in production to save memory
+    productionBrowserSourceMaps: false,
     experimental: {
         optimizePackageImports: ['react-icons'],
+        // Reduce memory usage during build
+        workerThreads: false,
     },
     images: {
         remotePatterns: [
@@ -29,42 +33,59 @@ const nextConfig = {
     },
     // Enable compression
     compress: true,
-    // Optimize bundle splitting
+    // Optimize for low-resource environments
+    output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+    // Optimize bundle splitting for memory-constrained builds
     webpack: (config, { dev, isServer }) => {
-        // Bundle analyzer
+        // Bundle analyzer (only when explicitly requested)
         if (process.env.ANALYZE === 'true') {
             const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
             config.plugins.push(
                 new BundleAnalyzerPlugin({
                     analyzerMode: 'static',
-                    openAnalyzer: true,
+                    openAnalyzer: false, // Don't auto-open to save resources
                 })
             );
         }
 
+        // Only apply optimizations in production builds
         if (!dev && !isServer) {
+            // Ensure optimization object exists
+            config.optimization = config.optimization || {};
+
+            // Basic optimizations that don't conflict with cache
+            config.optimization.minimize = true;
+            config.optimization.concatenateModules = false; // Disable scope hoisting to save memory
+
+            // Simpler chunk splitting for low-memory environments
             config.optimization.splitChunks = {
                 chunks: 'all',
+                maxSize: 244000, // Smaller chunks to reduce memory usage
                 cacheGroups: {
+                    default: {
+                        minChunks: 2,
+                        priority: -20,
+                        reuseExistingChunk: true,
+                    },
                     vendor: {
                         test: /[\\/]node_modules[\\/]/,
                         name: 'vendors',
+                        priority: -10,
                         chunks: 'all',
-                        priority: 10,
-                    },
-                    common: {
-                        name: 'common',
-                        minChunks: 2,
-                        chunks: 'all',
-                        priority: 5,
-                        reuseExistingChunk: true,
+                        maxSize: 244000,
                     },
                 },
             };
 
-            // Tree shaking optimization
-            config.optimization.usedExports = true;
+            // Remove conflicting optimizations
+            // Don't set usedExports as it conflicts with cacheUnaffected
+            // config.optimization.usedExports = true;
             config.optimization.sideEffects = false;
+        }
+
+        // Limit the number of parallel builds
+        if (config.parallelism) {
+            config.parallelism = 1;
         }
 
         return config;

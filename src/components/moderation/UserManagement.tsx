@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 
 interface User {
     id: string;
@@ -55,7 +55,7 @@ export function UserManagement() {
 
     const fetchReports = async () => {
         try {
-            const response = await fetch('/api/reports');
+            const response = await fetch('/api/reports?moderation=true');
             if (!response.ok) {
                 throw new Error('Failed to fetch reports');
             }
@@ -133,29 +133,29 @@ export function UserManagement() {
         }
     }, [reports]);
 
-    const filteredReports = reports.filter(report => {
-        if (!searchTerm) return true;
+    const filteredReports = useMemo(() => {
+        if (!searchTerm) return reports;
         const searchLower = searchTerm.toLowerCase();
-        return (
+        return reports.filter(report => (
             report.reporter.username.toLowerCase().includes(searchLower) ||
             report.reporter.displayName?.toLowerCase().includes(searchLower) ||
             report.reportedUser?.username.toLowerCase().includes(searchLower) ||
             report.reportedUser?.displayName?.toLowerCase().includes(searchLower) ||
             report.reason.toLowerCase().includes(searchLower)
-        );
-    });
+        ));
+    }, [reports, searchTerm]);
 
-    const filteredUsers = users.filter(user => {
-        if (!searchTerm) return true;
+    const filteredUsers = useMemo(() => {
+        if (!searchTerm) return users;
         const searchLower = searchTerm.toLowerCase();
-        return (
+        return users.filter(user => (
             user.username.toLowerCase().includes(searchLower) ||
             user.displayName?.toLowerCase().includes(searchLower) ||
             user.email.toLowerCase().includes(searchLower)
-        );
-    });
+        ));
+    }, [users, searchTerm]);
 
-    const getStatusColor = (status: string) => {
+    const getStatusColor = useCallback((status: string) => {
         switch (status) {
             case 'pending':
                 return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/20';
@@ -168,11 +168,11 @@ export function UserManagement() {
             default:
                 return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-700';
         }
-    };
+    }, []);
 
-    const formatDate = (dateString: string) => {
+    const formatDate = useCallback((dateString: string) => {
         return new Date(dateString).toLocaleDateString();
-    };
+    }, []);
 
     if (isLoading) {
         return (
@@ -223,8 +223,8 @@ export function UserManagement() {
                         <button
                             onClick={() => setActiveView('reports')}
                             className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${activeView === 'reports'
-                                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                                 }`}
                         >
                             Reports
@@ -232,8 +232,8 @@ export function UserManagement() {
                         <button
                             onClick={() => setActiveView('users')}
                             className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${activeView === 'users'
-                                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                                 }`}
                         >
                             Users

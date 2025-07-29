@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ModerationQueueItem } from './ModerationQueueItem';
 
 interface QueueItem {
@@ -102,7 +102,7 @@ export function ModerationQueue() {
         }
     };
 
-    const getSeverityColor = (severity: string) => {
+    const getSeverityColor = useCallback((severity: string) => {
         switch (severity) {
             case 'high':
                 return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20';
@@ -113,9 +113,9 @@ export function ModerationQueue() {
             default:
                 return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-700';
         }
-    };
+    }, []);
 
-    const getStatusColor = (status: string) => {
+    const getStatusColor = useCallback((status: string) => {
         switch (status) {
             case 'escalated':
                 return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20';
@@ -126,7 +126,7 @@ export function ModerationQueue() {
             default:
                 return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-700';
         }
-    };
+    }, []);
 
     if (isLoading) {
         return (

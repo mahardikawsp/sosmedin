@@ -6,6 +6,8 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
+        "build:low-memory": "NODE_OPTIONS='--max-old-space-size=3072' next build",
+        "build:cloud": "NODE_OPTIONS='--max-old-space-size=3072 --max-semi-space-size=128' BUILD_STANDALONE=true next build",
         "build:analyze": "ANALYZE=true next build",
         "start": "next start",
         "lint": "next lint",
@@ -16,7 +18,8 @@
         "db:seed": "prisma db seed",
         "test": "jest",
         "test:watch": "jest --watch",
-        "perf:monitor": "node scripts/performance-monitor.js"
+        "perf:monitor": "node scripts/performance-monitor.js",
+        "verify:build": "node scripts/verify-build.js"
     },
     "dependencies": {
         "@auth/prisma-adapter": "^2.10.0",

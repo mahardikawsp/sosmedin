@@ -1,0 +1,62 @@
+# Multi-stage Docker build optimized for low-resource cloud environments
+# Usage: docker build -f Dockerfile.cloud -t sosmedin-cloud .
+
+# Build stage
+FROM node:18-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Set memory limits for Node.js
+ENV NODE_OPTIONS="--max-old-space-size=3072 --max-semi-space-size=128"
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV BUILD_STANDALONE=true
+
+# Install dependencies first (better caching)
+COPY package*.json ./
+RUN npm ci --only=production --prefer-offline
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build the application with timeout
+RUN timeout 600 npm run build:cloud || (echo "Build timed out, trying with reduced memory" && NODE_OPTIONS="--max-old-space-size=2048" npm run build:cloud)
+
+# Verify build
+RUN npm run verify:build
+
+# Production stage
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+# Set production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# Start the application
+CMD ["node", "server.js"]
