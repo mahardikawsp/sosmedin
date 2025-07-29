@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client'
 
 // Database connection pool optimization
 export function createOptimizedPrismaClient(): PrismaClient {
