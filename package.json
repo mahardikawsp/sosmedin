@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "next dev",
-        "build": "prisma generate && next build",
+        "build": "prisma generate --schema=./prisma/schema.prisma && next build",
         "build:low-memory": "NODE_OPTIONS='--max-old-space-size=3072' next build",
         "build:cloud": "NODE_OPTIONS='--max-old-space-size=3072 --max-semi-space-size=128' BUILD_STANDALONE=true next build",
         "build:analyze": "ANALYZE=true next build",
