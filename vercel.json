@@ -1,7 +1,3 @@
 {
-    "buildCommand": "prisma generate && next build",
-    "installCommand": "npm install",
-    "env": {
-        "SKIP_ENV_VALIDATION": "1"
-    }
+    "buildCommand": "pnpm install --no-frozen-lockfile && pnpm prisma generate && pnpm build"
 }
