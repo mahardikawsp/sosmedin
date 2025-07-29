@@ -12,24 +12,43 @@ export function getBaseUrl(): string {
         return window.location.origin;
     }
 
-    // Server-side: try environment variables
-    if (process.env.NEXTAUTH_URL) {
+    // Server-side: try environment variables in order of preference
+
+    // 1. Explicit NEXTAUTH_URL (highest priority)
+    if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes('localhost')) {
         return process.env.NEXTAUTH_URL;
     }
 
-    // For Vercel deployments
+    // 2. Vercel deployment URL
     if (process.env.VERCEL_URL) {
         return `https://${process.env.VERCEL_URL}`;
     }
 
-    // For other cloud platforms
+    // 3. Railway deployment URL
+    if (process.env.RAILWAY_STATIC_URL) {
+        return `https://${process.env.RAILWAY_STATIC_URL}`;
+    }
+
+    // 4. Netlify deployment URL
+    if (process.env.URL) {
+        return process.env.URL;
+    }
+
+    // 5. Generic deployment URL patterns
+    if (process.env.DEPLOY_URL) {
+        return process.env.DEPLOY_URL;
+    }
+
+    // 6. Try to construct from host headers (for server-side rendering)
     if (process.env.NODE_ENV === 'production') {
-        // You can add other platform-specific URL detection here
-        throw new Error('Production base URL not configured. Set NEXTAUTH_URL environment variable.');
+        // In production, we should never fall back to localhost
+        // Instead, we'll return undefined and let NextAuth handle it
+        console.warn('No production URL configured. Set NEXTAUTH_URL environment variable.');
+        return '';
     }
 
     // Development fallback
-    return 'http://localhost:3000';
+    return 'https://avvhvzvndubd.ap-southeast-1.clawcloudrun.com';
 }
 
 /**
@@ -39,6 +58,61 @@ export function getBaseUrl(): string {
  */
 export function createCallbackUrl(path: string): string {
     const baseUrl = getBaseUrl();
+
+    // If path is already absolute, return as-is if it matches our domain
+    if (path.startsWith('http')) {
+        if (path.startsWith(baseUrl)) {
+            return path;
+        }
+        // If it's an external URL, redirect to dashboard instead
+        return `${baseUrl}/dashboard`;
+    }
+
+    // If path is relative, make it absolute
+    if (path.startsWith('/')) {
+        return `${baseUrl}${path}`;
+    }
+
+    // If path doesn't start with /, add it
+    return `${baseUrl}/${path}`;
+}
+
+/**
+ * Gets the base URL from request headers (server-side only)
+ * @param request - The NextRequest object
+ * @returns The base URL constructed from request headers
+ */
+export function getBaseUrlFromRequest(request?: any): string {
+    if (!request) {
+        return getBaseUrl();
+    }
+
+    // Try to get the URL from request headers (prioritize forwarded headers)
+    const host = request.headers?.get?.('x-forwarded-host') ||
+        request.headers?.get?.('host') ||
+        request.headers?.host ||
+        request.headers?.['x-forwarded-host'];
+
+    const protocol = request.headers?.get?.('x-forwarded-proto') ||
+        request.headers?.['x-forwarded-proto'] ||
+        (host?.includes('localhost') ? 'http' : 'https');
+
+    // If we have a valid host and it's not localhost, use it
+    if (host && !host.includes('localhost')) {
+        return `${protocol}://${host}`;
+    }
+
+    return getBaseUrl();
+}
+
+/**
+ * Creates a proper callback URL with the correct domain
+ * @param path - The path to redirect to after authentication
+ * @param request - Optional request object for server-side URL detection
+ * @returns A fully qualified URL
+ */
+export function createCallbackUrlFromRequest(path: string, request?: any): string {
+    const baseUrl = getBaseUrlFromRequest(request);
 
     // If path is already absolute, return as-is if it matches our domain
     if (path.startsWith('http')) {

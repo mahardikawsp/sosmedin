@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { createCallbackUrlFromRequest } from './src/lib/url-utils';
 
 // Paths that require authentication
 const protectedPaths = [
@@ -60,8 +61,9 @@ export async function middleware(request: NextRequest) {
     if (isProtectedPath && !isAuthenticated) {
         // Use the request's origin to ensure we redirect to the correct domain
         const loginUrl = new URL('/login', request.nextUrl.origin);
-        // Store the original URL as a callback URL to redirect after login
-        loginUrl.searchParams.set('callbackUrl', request.nextUrl.href);
+        // Create a proper callback URL using the request context
+        const callbackUrl = createCallbackUrlFromRequest(pathname, request);
+        loginUrl.searchParams.set('callbackUrl', callbackUrl);
         return NextResponse.redirect(loginUrl);
     }
 
