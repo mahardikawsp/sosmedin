@@ -74,20 +74,31 @@ export const authOptions: NextAuthOptions = {
         },
         async redirect({ url, baseUrl }) {
             // Get the correct base URL
-            const correctBaseUrl = getBaseUrl() || baseUrl;
+            const correctBaseUrl = process.env.NEXTAUTH_URL ||
+                (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : baseUrl);
+
+            // Debug logging in development
+            if (process.env.NODE_ENV === "development") {
+                console.log('NextAuth redirect:', { url, baseUrl, correctBaseUrl });
+            }
 
             // If url is relative, make it absolute with correct domain
             if (url.startsWith('/')) {
-                return `${correctBaseUrl}${url}`;
+                const redirectUrl = `${correctBaseUrl}${url}`;
+                console.log('Redirecting to:', redirectUrl);
+                return redirectUrl;
             }
 
             // If url is absolute and matches our domain, allow it
             if (url.startsWith(correctBaseUrl)) {
+                console.log('Allowing redirect to:', url);
                 return url;
             }
 
             // For external URLs, redirect to dashboard
-            return `${correctBaseUrl}/dashboard`;
+            const dashboardUrl = `${correctBaseUrl}/dashboard`;
+            console.log('External URL, redirecting to dashboard:', dashboardUrl);
+            return dashboardUrl;
         },
         async signIn({ user, account, profile }) {
             // Allow OAuth providers to link with existing accounts
@@ -173,8 +184,9 @@ export const authOptions: NextAuthOptions = {
     },
     debug: process.env.NODE_ENV === "development",
     secret: process.env.NEXTAUTH_SECRET || "default-secret-change-in-production",
-    // Ensure proper URL configuration
-    ...(getBaseUrl() && { url: getBaseUrl() }),
+    // Explicit URL configuration for production
+    url: process.env.NEXTAUTH_URL ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined),
     // Allow linking accounts with the same email address
     // allowDangerousEmailAccountLinking: true, // This option may not be available in this version
 };
