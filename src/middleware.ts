@@ -58,10 +58,20 @@ export async function middleware(request: NextRequest) {
 
     // If the path is protected and user is not authenticated, redirect to login
     if (isProtectedPath && !isAuthenticated) {
-        // Use the request's origin to ensure we redirect to the correct domain
-        const loginUrl = new URL('/login', request.nextUrl.origin);
-        // Store the original URL as a callback URL to redirect after login
-        loginUrl.searchParams.set('callbackUrl', request.nextUrl.href);
+        // Force use of production domain for callback URL
+        const productionDomain = 'https://avvhvzvndubd.ap-southeast-1.clawcloudrun.com';
+        const loginUrl = new URL('/login', productionDomain);
+
+        // Create callback URL with production domain
+        const callbackUrl = `${productionDomain}${pathname}`;
+        loginUrl.searchParams.set('callbackUrl', callbackUrl);
+
+        console.log('Middleware redirect:', {
+            originalUrl: request.nextUrl.href,
+            callbackUrl,
+            loginUrl: loginUrl.toString()
+        });
+
         return NextResponse.redirect(loginUrl);
     }
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { fixCallbackUrl } from '@/lib/redirect-fix';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -29,7 +30,12 @@ export default function LoginPage() {
         // If user is authenticated, redirect to dashboard or callbackUrl
         if (status === 'authenticated') {
             // Get the callbackUrl from the URL if it exists
-            const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+            let callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
+            // Fix localhost URLs
+            callbackUrl = fixCallbackUrl(callbackUrl);
+
+            console.log('Redirecting after auth to:', callbackUrl);
 
             // Use replace to avoid back button issues
             router.replace(callbackUrl);
@@ -44,7 +50,12 @@ export default function LoginPage() {
 
         try {
             // Get the callbackUrl from the URL if it exists
-            const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+            let callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
+            // Fix localhost URLs
+            callbackUrl = fixCallbackUrl(callbackUrl);
+
+            console.log('Using callback URL:', callbackUrl);
 
             const result = await signIn('credentials', {
                 redirect: false,
@@ -53,7 +64,7 @@ export default function LoginPage() {
                 callbackUrl,
             });
 
-            setDebugInfo(`Sign in result: ${JSON.stringify(result)}`);
+            setDebugInfo(`Sign in result: ${JSON.stringify(result)}, callbackUrl: ${callbackUrl}`);
 
             if (result?.error) {
                 setError('Invalid email or password');
@@ -79,7 +90,12 @@ export default function LoginPage() {
         setIsLoading(true);
         try {
             // Get the callbackUrl from the URL if it exists
-            const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+            let callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
+            // Fix localhost URLs
+            callbackUrl = fixCallbackUrl(callbackUrl);
+
+            console.log('Google sign in with callback URL:', callbackUrl);
 
             await signIn('google', { callbackUrl });
         } catch (error) {

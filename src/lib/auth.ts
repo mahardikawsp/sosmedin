@@ -72,27 +72,34 @@ export const authOptions: NextAuthOptions = {
             return session;
         },
         async redirect({ url, baseUrl }) {
-            // For nginx proxy, use the hardcoded domain
-            const correctBaseUrl = process.env.NEXTAUTH_URL || 'https://avvhvzvndubd.ap-southeast-1.clawcloudrun.com';
+            // Force use of production domain
+            const correctBaseUrl = 'https://avvhvzvndubd.ap-southeast-1.clawcloudrun.com';
 
             console.log('NextAuth redirect:', { url, baseUrl, correctBaseUrl });
 
+            // Fix any localhost URLs in the incoming URL
+            let fixedUrl = url;
+            if (url.includes('localhost:3000')) {
+                fixedUrl = url.replace(/https?:\/\/localhost:3000/g, correctBaseUrl);
+                console.log('Fixed localhost URL:', url, '->', fixedUrl);
+            }
+
             // If url is relative, make it absolute with correct domain
-            if (url.startsWith('/')) {
-                const redirectUrl = `${correctBaseUrl}${url}`;
+            if (fixedUrl.startsWith('/')) {
+                const redirectUrl = `${correctBaseUrl}${fixedUrl}`;
                 console.log('Redirecting to:', redirectUrl);
                 return redirectUrl;
             }
 
             // If url is absolute and matches our domain, allow it
-            if (url.startsWith(correctBaseUrl)) {
-                console.log('Allowing redirect to:', url);
-                return url;
+            if (fixedUrl.startsWith(correctBaseUrl)) {
+                console.log('Allowing redirect to:', fixedUrl);
+                return fixedUrl;
             }
 
-            // For external URLs, redirect to dashboard
+            // For external URLs or localhost, redirect to dashboard
             const dashboardUrl = `${correctBaseUrl}/dashboard`;
-            console.log('External URL, redirecting to dashboard:', dashboardUrl);
+            console.log('External/localhost URL, redirecting to dashboard:', dashboardUrl);
             return dashboardUrl;
         },
         async signIn({ user, account, profile }) {
