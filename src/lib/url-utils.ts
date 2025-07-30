@@ -15,7 +15,7 @@ export function getBaseUrl(): string {
     // Server-side: try environment variables in order of preference
 
     // 1. Explicit NEXTAUTH_URL (highest priority)
-    if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes('localhost')) {
+    if (process.env.NEXTAUTH_URL) {
         return process.env.NEXTAUTH_URL;
     }
 
@@ -39,16 +39,13 @@ export function getBaseUrl(): string {
         return process.env.DEPLOY_URL;
     }
 
-    // 6. Try to construct from host headers (for server-side rendering)
+    // 6. Fallback to hardcoded domain for nginx proxy
     if (process.env.NODE_ENV === 'production') {
-        // In production, we should never fall back to localhost
-        // Instead, we'll return undefined and let NextAuth handle it
-        console.warn('No production URL configured. Set NEXTAUTH_URL environment variable.');
-        return '';
+        return 'https://avvhvzvndubd.ap-southeast-1.clawcloudrun.com';
     }
 
     // Development fallback
-    return 'https://avvhvzvndubd.ap-southeast-1.clawcloudrun.com';
+    return 'http://localhost:3000';
 }
 
 /**

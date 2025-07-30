@@ -4,7 +4,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "./prisma";
 import { comparePassword } from "./auth-utils";
 import { CustomPrismaAdapter } from "./custom-prisma-adapter";
-import { getBaseUrl } from "./url-utils";
 
 
 
@@ -73,14 +72,10 @@ export const authOptions: NextAuthOptions = {
             return session;
         },
         async redirect({ url, baseUrl }) {
-            // Get the correct base URL
-            const correctBaseUrl = process.env.NEXTAUTH_URL ||
-                (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : baseUrl);
+            // For nginx proxy, use the hardcoded domain
+            const correctBaseUrl = process.env.NEXTAUTH_URL || 'https://avvhvzvndubd.ap-southeast-1.clawcloudrun.com';
 
-            // Debug logging in development
-            if (process.env.NODE_ENV === "development") {
-                console.log('NextAuth redirect:', { url, baseUrl, correctBaseUrl });
-            }
+            console.log('NextAuth redirect:', { url, baseUrl, correctBaseUrl });
 
             // If url is relative, make it absolute with correct domain
             if (url.startsWith('/')) {
@@ -184,9 +179,6 @@ export const authOptions: NextAuthOptions = {
     },
     debug: process.env.NODE_ENV === "development",
     secret: process.env.NEXTAUTH_SECRET || "default-secret-change-in-production",
-    // Explicit URL configuration for production
-    url: process.env.NEXTAUTH_URL ||
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined),
     // Allow linking accounts with the same email address
     // allowDangerousEmailAccountLinking: true, // This option may not be available in this version
 };
